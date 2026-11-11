@@ -5,8 +5,61 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Скролл!</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
-<!-- ЗАЩИТА ОТ КЭША: ?v=3 -->
-<link rel="stylesheet" href="style.css?v=3">
+<style>
+/* СТИЛИ ВСТРОЕНЫ ПРЯМО СЮДА, ЧТОБЫ БРАУЗЕР ИХ ТОЧНО УВИДЕЛ */
+:root{--bg:#000;--card:#0a0a0a;--line:#222;--text:#fff;--muted:#888;--acc:#fff;--rad:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:sans-serif;height:100vh;overflow:hidden;display:flex;justify-content:center}
+.app{width:100%;max-width:1300px;height:100vh;display:flex;flex-direction:column}
+
+header{background:var(--card);display:flex;align-items:center;justify-content:space-between;padding:0 25px;height:65px;border-bottom:1px solid var(--line);z-index:10}
+.logo-area{display:flex;align-items:center;gap:12px;cursor:pointer}
+.logo-icon{width:34px;height:34px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#000}
+.logo-text{font-size:22px;font-weight:900;letter-spacing:-0.5px}
+.search-bar{flex:1;max-width:450px;margin:0 30px;background:#111;border:1px solid var(--line);border-radius:20px;display:flex;align-items:center;padding:0 15px;height:40px}
+.search-bar span{color:var(--muted);margin-right:10px;font-size:14px}
+.search-bar input{background:transparent;border:none;color:#fff;width:100%;outline:none;font-size:14px}
+.header-icons{display:flex;align-items:center;gap:20px}
+.icon-btn{position:relative;font-size:20px;cursor:pointer;color:var(--muted)}
+.badge{position:absolute;top:-5px;right:-5px;background:#fff;color:#000;font-size:10px;font-weight:bold;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center}
+.avatar{width:40px;height:40px;border-radius:50%;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;cursor:pointer}
+
+.main-layout{flex:1;display:flex;overflow:hidden}
+.sidebar-left{width:240px;background:var(--card);border-right:1px solid var(--line);padding:20px 15px;display:flex;flex-direction:column}
+.nav-btn{background:transparent;border:none;color:var(--muted);font-size:15px;font-weight:600;padding:12px 15px;border-radius:10px;display:flex;align-items:center;gap:12px;cursor:pointer;text-align:left;width:100%;margin-bottom:4px;transition:.2s}
+.nav-btn:hover{background:#111;color:#fff}
+.nav-btn.active{background:#fff;color:#000}
+
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.view{display:none;flex:1;overflow-y:auto;padding:30px}
+.view.active{display:flex;flex-direction:column}
+.center-wrap{max-width:650px;margin:0 auto;width:100%}
+
+.btn{background:#fff;color:#000;border:none;padding:10px 20px;border-radius:10px;font-weight:700;cursor:pointer}
+.btn-ghost{background:#111;color:#fff;border:1px solid var(--line)}
+
+.composer{background:var(--card);border-radius:var(--rad);padding:20px;margin-bottom:20px;border:1px solid var(--line)}
+.composer textarea{width:100%;background:transparent;border:none;resize:none;outline:none;color:#fff;font-size:16px;margin-bottom:15px;font-family:inherit}
+.composer-tools{display:flex;justify-content:space-between;align-items:center}
+.post{background:var(--card);border-radius:var(--rad);padding:20px;margin-bottom:20px;border:1px solid var(--line)}
+.av{width:44px;height:44px;border-radius:50%;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px}
+.post-img{width:100%;border-radius:10px;margin-top:15px;max-height:400px;object-fit:cover}
+
+.chat-layout{display:flex;height:100%;gap:20px}
+.chat-sidebar{width:300px;background:var(--card);border-radius:var(--rad);border:1px solid var(--line);overflow-y:auto}
+.chat-area{flex:1;background:var(--card);border-radius:var(--rad);border:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.msg-wrap{display:flex;flex-direction:column;max-width:75%}
+.msg-wrap.me{align-self:flex-end}
+.msg{padding:12px 16px;border-radius:14px;font-size:15px;background:#1a1a1a;color:#fff}
+.msg.me{background:#fff;color:#000;border-bottom-right-radius:4px}
+
+.auth{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;justify-content:center;align-items:center}
+.auth-box{background:var(--card);padding:45px;border-radius:var(--rad);width:100%;max-width:400px;text-align:center;border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,0.5)}
+.auth h1{margin-bottom:25px;font-size:32px}
+.auth input{width:100%;background:#000;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px;color:#fff;outline:none;transition:.2s}
+.auth input:focus{border-color:#fff}
+</style>
 </head>
 <body>
 <div class="app">
@@ -113,8 +166,10 @@
   </div>
 </div>
 
+<!-- СКРИПТЫ -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<!-- Тот самый app.js, который мы писали -->
 <script src="app.js"></script>
 </body>
 </html>
