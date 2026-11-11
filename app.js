@@ -10,26 +10,13 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let DB = { users: [], posts: [], msgs: [], friends: [], reqs: [] };
+let DB = { users: [], posts: [], msgs: [], friends: [], reqs: [], shorts: [] };
 let u = JSON.parse(localStorage.getItem('scroll_session') || 'null');
 let aMode = 'login', cTab = 'recs', aChat = null;
+let currentShortIndex = 0;
 
 const BAD_WORDS = ['хуй', 'пизда', 'ебать', 'блять', 'сука', 'долбоеб', 'мудак', 'гандон', 'шлюха', 'нахуй', 'пиздец'];
-const BAD_NICKS = ['admin', 'moder', 'support', 'sistem', 'fuck', 'shit', 'бля', 'хуй'];
-
-function censor(text) { 
-  let clean = text; 
-  BAD_WORDS.forEach(w => { clean = clean.replace(new RegExp(w, 'gi'), '***'); }); 
-  return clean; 
-}
-
-function checkNick(nick) {
-  if(nick.length < 2 || nick.length > 15) return 'Ник от 2 до 15 символов';
-  if(BAD_NICKS.some(w => nick.toLowerCase().includes(w))) return 'Этот ник запрещен правилами';
-  if(!/^[a-zA-Zа-яА-Я0-9_]+$/.test(nick)) return 'Только буквы, цифры и _';
-  return null;
-}
-
+function censor(text) { let clean = text; BAD_WORDS.forEach(w => { clean = clean.replace(new RegExp(w, 'gi'), '***'); }); return clean; }
 let lastPostTime = 0;
 
 db.ref('/').on('value', snap => {
@@ -39,111 +26,150 @@ db.ref('/').on('value', snap => {
   DB.msgs = data.msgs ? Object.values(data.msgs) : [];
   DB.friends = data.friends ? Object.values(data.friends) : [];
   DB.reqs = data.reqs ? Object.values(data.reqs) : [];
+  DB.shorts = data.shorts ? Object.values(data.shorts) : [];
+  
   DB.posts = DB.posts.map(p => ({...p, likes: p.likes || [], cmts: p.cmts || []}));
 
-  if(document.getElementById('v-feed') && document.getElementById('v-feed').classList.contains('active')) renderFeed();
-  if(document.getElementById('v-profile') && document.getElementById('v-profile').classList.contains('active')) renderProfile();
-  if(document.getElementById('v-chats') && document.getElementById('v-chats').classList.contains('active')) renderChats();
-  if(document.getElementById('v-chat') && document.getElementById('v-chat').classList.contains('active') && aChat) renderMsgs(aChat);
+  if(document.getElementById('v-feed').classList.contains('active')) renderFeed();
+  if(document.getElementById('v-profile').classList.contains('active')) renderProfile();
+  if(document.getElementById('v-chats').classList.contains('active')) renderChats();
+  if(document.getElementById('v-chat').classList.contains('active') && aChat) renderMsgs(aChat);
+  renderFriendsSidebar();
 });
 
 const genId = () => { let id; do { id = Math.floor(1000+Math.random()*9000).toString(); } while(DB.users.some(x=>x.id===id)); return id; };
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ago = t => { let d=(Date.now()-t)/1000; if(d<60)return'сейчас'; if(d<3600)return Math.floor(d/60)+'м'; if(d<86400)return Math.floor(d/3600)+'ч'; return Math.floor(d/86400)+'д'; };
-const gT = t => { let d=new Date(t); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); };
 const ini = n => n ? n[0].toUpperCase() : '?';
-const gU = id => DB.users.find(x => x.id === id) || {nick:'Удалён', id, cover:'', lastSeen:0};
+const gU = id => DB.users.find(x => x.id === id) || {nick:'Удалён', id, lastSeen:0, game:''};
+const isOnline = (id) => { let user = gU(id); return user.lastSeen && (Date.now() - user.lastSeen < 300000); };
 
+// НАСТРОЙКИ
 function appSet(){
-  let s = JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16,"radius":16,"anim":true}');
+  let s = JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true}');
   document.body.dataset.theme = s.theme;
   if(s.bold) document.body.removeAttribute('data-thin'); else document.body.setAttribute('data-thin','1');
-  document.documentElement.style.setProperty('--fs', s.fs+'px');
-  document.documentElement.style.setProperty('--rad', s.radius+'px');
   let t=document.getElementById('tBold'); if(t) t.classList.toggle('on',s.bold);
-  let a=document.getElementById('tAnim'); if(a) a.classList.toggle('on',s.anim);
+  let th=document.getElementById('tTheme'); if(th) th.classList.toggle('on',s.theme==='dark');
 }
-const setTheme = t => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16,"radius":16,"anim":true}'); s.theme=t; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
-const toggleBold = () => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16,"radius":16,"anim":true}'); s.bold=!s.bold; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
-const toggleAnim = () => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16,"radius":16,"anim":true}'); s.anim=!s.anim; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
-const clearAll = () => { if(confirm('Стереть всё?')){ localStorage.clear(); location.reload(); } };
+const toggleTheme = () => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true}'); s.theme=s.theme==='dark'?'light':'dark'; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
+const toggleBold = () => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true}'); s.bold=!s.bold; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
 appSet();
 
+// АВТОРИЗАЦИЯ
 function authToggle(){
   aMode=aMode==='login'?'register':'login';
-  document.getElementById('aBtn').textContent=aMode==='login'?'Войти':'Создать';
-  document.getElementById('aSub').textContent=aMode==='login'?'Заходи на сайт, тут весело!':'Придумай ник и пароль';
-  document.getElementById('aSwitch').innerHTML=aMode==='login'?'нет аккаунта? <u>создать</u>':'уже есть? <u>войти</u>';
+  document.getElementById('aBtn').textContent=aMode==='login'?'Войти':'Создать аккаунт';
+  document.getElementById('aSwitch').innerHTML=aMode==='login'?'Нет аккаунта? <u style="color:var(--text)">Создать</u>':'Уже есть аккаунт? <u style="color:var(--text)">Войти</u>';
   document.getElementById('aErr').textContent='';
 }
 
 function authSubmit(){
-  let n=document.getElementById('aNick').value.trim();
-  let p=document.getElementById('aPass').value;
-  let e=document.getElementById('aErr');
+  let n=document.getElementById('aNick').value.trim(), p=document.getElementById('aPass').value, e=document.getElementById('aErr');
   e.textContent='';
-  
-  if(p.length<4) return e.textContent='Пароль минимум 4 символа!';
+  if(n.length < 2) return e.textContent='Ник от 2 символов!';
+  if(p.length < 3) return e.textContent='Пароль от 3 символов!';
   
   if(aMode==='register'){
-    let nickErr = checkNick(n); 
-    if(nickErr) return e.textContent = nickErr;
-    if(DB.users.some(x=>x.nick.toLowerCase()===n.toLowerCase())) return e.textContent='Этот ник уже занят';
-    
-    let nu={id:genId(),nick:n,pass:p,cover:''};
+    if(DB.users.some(x=>x.nick.toLowerCase()===n.toLowerCase())) return e.textContent='Ник занят';
+    let nu={id:genId(),nick:n,pass:p,lastSeen:Date.now(),game:''};
     db.ref('users/'+nu.id).set(nu).then(()=>{
-      u={id:nu.id,nick:nu.nick,cover:''};
-      localStorage.setItem('scroll_session',JSON.stringify(u));
-      location.reload();
-    }).catch(err=>e.textContent='Ошибка сети');
+      u={id:nu.id,nick:nu.nick}; localStorage.setItem('scroll_session',JSON.stringify(u)); location.reload();
+    });
   }else{
     let f=DB.users.find(x=>x.nick.toLowerCase()===n.toLowerCase()&&x.pass===p);
     if(!f) return e.textContent='Неверный ник или пароль';
-    u={id:f.id,nick:f.nick,cover:f.cover||''};
-    localStorage.setItem('scroll_session',JSON.stringify(u));
-    location.reload();
+    u={id:f.id,nick:f.nick}; localStorage.setItem('scroll_session',JSON.stringify(u)); location.reload();
   }
 }
 function logout(){localStorage.removeItem('scroll_session');u=null;location.reload()}
 
 function show(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
-  let el=document.getElementById('v-'+v);if(el)el.classList.add('active');
+  document.getElementById('v-'+v).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  let nb=document.getElementById('n-'+v);if(nb)nb.classList.add('active');
-  if(v==='profile')renderProfile();if(v==='chats')renderChats();if(v==='feed')renderFeed();
+  let nb=document.getElementById('n-'+v); if(nb) nb.classList.add('active');
+  
+  let titles = {'feed':'Лента', 'shorts':'Скроллс 🎬', 'chats':'Чаты', 'music':'Музыка', 'profile':'Профиль', 'settings':'Настройки', 'chat':'Диалог'};
+  document.getElementById('hTitle').textContent = titles[v];
+  
+  if(v==='profile') renderProfile();
+  if(v==='chats') renderChats();
+  if(v==='feed') renderFeed();
+  if(v==='shorts') renderShorts();
+  if(v==='settings') { let g=gU(u.id); document.getElementById('gameInput').value = g.game || ''; }
 }
 
-function attachImg(e) {
-  let file = e.target.files[0]; if(!file) return;
-  let reader = new FileReader();
-  reader.onload = function(evt) {
-    let img = new Image();
-    img.onload = function() {
-      let canvas = document.createElement('canvas');
-      let MAX = 800; let width = img.width, height = img.height;
-      if (width > height) { if (width > MAX) { height *= MAX / width; width = MAX; } } else { if (height > MAX) { width *= MAX / height; height = MAX; } }
-      canvas.width = width; canvas.height = height;
-      let ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-      let dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-      document.getElementById('pText').dataset.img = dataUrl;
-      document.getElementById('imgPreview').innerHTML = `<img src="${dataUrl}" style="width:100%;border-radius:12px;margin-top:10px;">`;
-    };
-    img.src = evt.target.result;
-  };
-  reader.readAsDataURL(file);
-}
+function saveGame(){ let g = document.getElementById('gameInput').value.trim(); db.ref('users/'+u.id+'/game').set(g); alert('Статус обновлен!'); }
+function playMusic(name, url) { let player = document.getElementById('musicPlayer'); player.src = url; player.play(); }
 
-// Музыка
-function selectTrack(name, url) {
-  let player = document.getElementById('musicPlayer');
-  player.src = url;
-  player.style.display = 'block';
-  player.play();
-  document.getElementById('pText').dataset.audio = url;
-  document.getElementById('pText').dataset.audioName = name;
-  document.getElementById('musicModal').classList.remove('open');
-}
+// ЛЕНТА
+function attachImg(e) { let file=e.target.files[0]; if(!file)return; let reader=new FileReader(); reader.onload=function(evt){ let img=new Image(); img.onload=function(){ let canvas=document.createElement('canvas'); let MAX=600,w=img.width,h=img.height; if(w>h){if(w>MAX){h*=MAX/w;w=MAX}}else{if(h>MAX){w*=MAX/h;h=MAX}} canvas.width=w;canvas.height=h; let ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,w,h); let data=canvas.toDataURL('image/jpeg',0.6); document.getElementById('pText').dataset.img=data; document.getElementById('imgPreview').innerHTML=`<img src="${data}" style="width:100%;border-radius:8px;margin-bottom:10px;">`; }; img.src=evt.target.result; }; reader.readAsDataURL(file); }
 
 function publish(){
-  let ta=
+  let ta=document.getElementById('pText'), t=ta.value.trim(), img=ta.dataset.img||'';
+  if(!t && !img)return;
+  if(Date.now() - lastPostTime < 5000) return alert('Подожди 5 сек.');
+  lastPostTime = Date.now();
+  db.ref('posts/'+Date.now()).set({id:Date.now().toString(),aId:u.id,aNick:u.nick,text:censor(t),img:img,time:Date.now(),likes:[],cmts:[]})
+  .then(()=>{ta.value='';ta.dataset.img='';document.getElementById('imgPreview').innerHTML='';});
+}
+
+function renderFeed(){
+  let f=document.getElementById('feed'), ps=DB.posts.slice().sort((a,b)=>b.time-a.time);
+  if(!ps.length) return f.innerHTML='<div style="text-align:center;color:var(--muted);padding:50px">Тут пока пусто...</div>';
+  f.innerHTML=ps.map(p=>{
+    let l=p.likes.includes(u.id), m=p.aId===u.id;
+    let imgHtml = p.img ? `<img src="${p.img}" class="p-img">` : '';
+    return `<article class="post"><div class="p-head"><div class="av ${isOnline(p.aId)?'online':''}">${ini(p.aNick)}</div><div><div style="font-weight:bold">${esc(p.aNick)}</div><div style="font-size:12px;color:var(--muted)">${ago(p.time)}</div></div></div><div class="p-text">${esc(p.text)}</div>${imgHtml}<div class="actions-row"><button class="act ${l?'liked':''}" onclick="like('${p.id}')">${l?'❤️':'🤍'} ${p.likes.length}</button><button class="act" onclick="document.querySelector('.ci-${p.id}').focus()">💬 ${p.cmts.length}</button>${m?`<button class="act" onclick="db.ref('posts/${p.id}').remove()">🗑</button>`:''}</div><div class="comments">${p.cmts.map(c=>`<div class="comment"><div class="av sm">${ini(c.n)}</div><div class="c-body"><span class="c-name">${esc(c.n)}</span>${esc(c.t)}</div></div>`).join('')}<div class="c-form"><input class="ci-${p.id}" placeholder="Написать коммент..." onkeydown="if(event.key==='Enter')addCmt('${p.id}',this)"></div></div></article>`;
+  }).join('');
+}
+function like(id){let p=DB.posts.find(x=>x.id===id);if(!p)return;let l=[...p.likes],i=l.indexOf(u.id);if(i===-1)l.push(u.id);else l.splice(i,1);db.ref('posts/'+id+'/likes').set(l)}
+function addCmt(id,inp){let t=inp.value.trim();if(!t)return;let p=DB.posts.find(x=>x.id===id);let cmts=[...p.cmts];cmts.push({id:Date.now().toString(),n:u.nick,t:censor(t)});db.ref('posts/'+id+'/cmts').set(cmts);inp.value='';}
+
+// СКРОЛЛС (SHORTS)
+function addShort(){
+  let url = document.getElementById('shortUrl').value.trim();
+  if(!url) return;
+  let match = url.match(/(?:youtube\.com\/shorts\/)([^"&?\/\s]{11})/);
+  if(!match) return alert('Вставь правильную ссылку на YouTube Shorts!');
+  db.ref('shorts/'+Date.now()).set({id: Date.now().toString(), vid: match[1], aId: u.id, aNick: u.nick});
+  document.getElementById('shortUrl').value='';
+}
+
+function renderShorts(){
+  let player = document.getElementById('shortsPlayer');
+  if(!DB.shorts.length) {
+    player.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888">Нет видео</div>';
+    return;
+  }
+  let s = DB.shorts[currentShortIndex];
+  player.innerHTML = `<iframe src="https://www.youtube.com/embed/${s.vid}?autoplay=1&loop=1&playlist=${s.vid}&controls=0" allowfullscreen allow="autoplay"></iframe>`;
+}
+
+function nextShort(){
+  if(DB.shorts.length <= 1) return;
+  currentShortIndex = (currentShortIndex + 1) % DB.shorts.length;
+  renderShorts();
+}
+
+// ДРУЗЬЯ
+function renderFriendsSidebar(){
+  if(!u) return;
+  let f=DB.friends.filter(x=>x.a===u.id||x.b===u.id);
+  let html = f.map(x=>{
+    let o = gU(x.a===u.id?x.b:x.a);
+    let online = isOnline(o.id);
+    return `<div class="friend-card" onclick="openChat('${o.id}')"><div class="av sm ${online?'online':''}">${ini(o.nick)}</div><div class="friend-info"><div class="friend-name">${esc(o.nick)}</div><div class="friend-game">${o.game || (online?'В сети':'Не в сети')}</div></div></div>`;
+  }).join('');
+  document.getElementById('onlineFriends').innerHTML = html || '<div style="color:var(--muted);text-align:center">Нет друзей</div>';
+}
+
+// ЧАТЫ (Упрощенно)
+function renderChats(){ let l=document.getElementById('chatsList'); l.innerHTML='<div style="color:var(--muted);text-align:center;padding:50px">Тут будут твои чаты...</div>'; }
+function openChat(id){ aChat=id; show('chat'); document.getElementById('cHeader').innerHTML=`<div style="font-weight:bold">${gU(id).nick}</div>`; renderMsgs(id); }
+function renderMsgs(id){ let h=document.getElementById('cMsgs'); h.innerHTML=DB.msgs.filter(m=>(m.from===u.id&&m.to===id)||(m.from===id&&m.to===u.id)).sort((a,b)=>a.time-b.time).map(m=>`<div class="msg-wrap ${m.from===u.id?'me':'them'}"><div class="msg">${esc(m.text)}</div></div>`).join(''); h.scrollTop=h.scrollHeight; }
+function send(){let i=document.getElementById('cInput'),t=i.value.trim();if(!t)return;db.ref('msgs/'+Date.now()).set({from:u.id,to:aChat,text:censor(t),time:Date.now()});i.value='';}
+function renderProfile(){ document.getElementById('pCard').innerHTML=`<div class="av lg">${ini(u.nick)}</div><h2 style="margin:10px 0">${esc(u.nick)}</h2><div style="color:var(--muted)">ID: @${u.id}</div>`; }
+
+if(u){document.getElementById('auth').style.display='none'; show('feed'); }
