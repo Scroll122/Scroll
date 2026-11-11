@@ -30,11 +30,6 @@ function checkNick(nick) {
   return null;
 }
 
-function setOnline() {
-  if(!u) return;
-  db.ref('users/' + u.id + '/lastSeen').set(Date.now());
-}
-
 let lastPostTime = 0;
 
 db.ref('/').on('value', snap => {
@@ -59,40 +54,18 @@ const gT = t => { let d=new Date(t); return d.getHours().toString().padStart(2,'
 const ini = n => n ? n[0].toUpperCase() : '?';
 const gU = id => DB.users.find(x => x.id === id) || {nick:'Удалён', id, cover:'', lastSeen:0};
 
-const isOnline = (id) => {
-  let user = gU(id);
-  return user.lastSeen && (Date.now() - user.lastSeen < 120000);
-};
-
-// Функция для получения ID видео из ссылки (YouTube, VK, RuTube)
-function getVideoHtml(url) {
-  if(!url) return '';
-  let ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-  if(ytMatch) return `<iframe class="p-video" src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen></iframe>`;
-  let vkMatch = url.match(/vk\.com\/video(-?\d+)_(\d+)/);
-  if(vkMatch) return `<iframe class="p-video" src="https://vk.com/video_ext.php?oid=${vkMatch[1]}&id=${vkMatch[2]}&hd=2" allowfullscreen></iframe>`;
-  let rtMatch = url.match(/rutube\.ru\/video\/([a-zA-Z0-9]+)/);
-  if(rtMatch) return `<iframe class="p-video" src="https://rutube.ru/play/embed/${rtMatch[1]}" allowfullscreen></iframe>`;
-  return ''; // Если ссылка не распознана
-}
-
 function appSet(){
   let s = JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16,"radius":16,"anim":true}');
   document.body.dataset.theme = s.theme;
-  document.body.dataset.anim = s.anim ? 'true' : 'false';
   if(s.bold) document.body.removeAttribute('data-thin'); else document.body.setAttribute('data-thin','1');
   document.documentElement.style.setProperty('--fs', s.fs+'px');
   document.documentElement.style.setProperty('--rad', s.radius+'px');
   let t=document.getElementById('tBold'); if(t) t.classList.toggle('on',s.bold);
   let a=document.getElementById('tAnim'); if(a) a.classList.toggle('on',s.anim);
-  let sl=document.getElementById('fSlider'); if(sl) sl.value=s.fs;
-  let rl=document.getElementById('rSlider'); if(rl) rl.value=s.radius;
 }
 const setTheme = t => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16,"radius":16,"anim":true}'); s.theme=t; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
 const toggleBold = () => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16,"radius":16,"anim":true}'); s.bold=!s.bold; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
 const toggleAnim = () => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16,"radius":16,"anim":true}'); s.anim=!s.anim; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
-const setFS = v => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16,"radius":16,"anim":true}'); s.fs=+v; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
-const setRad = v => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16,"radius":16,"anim":true}'); s.radius=+v; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
 const clearAll = () => { if(confirm('Стереть всё?')){ localStorage.clear(); location.reload(); } };
 appSet();
 
@@ -117,7 +90,7 @@ function authSubmit(){
     if(nickErr) return e.textContent = nickErr;
     if(DB.users.some(x=>x.nick.toLowerCase()===n.toLowerCase())) return e.textContent='Этот ник уже занят';
     
-    let nu={id:genId(),nick:n,pass:p,cover:'',lastSeen:Date.now()};
+    let nu={id:genId(),nick:n,pass:p,cover:''};
     db.ref('users/'+nu.id).set(nu).then(()=>{
       u={id:nu.id,nick:nu.nick,cover:''};
       localStorage.setItem('scroll_session',JSON.stringify(u));
@@ -141,7 +114,6 @@ function show(v){
   if(v==='profile')renderProfile();if(v==='chats')renderChats();if(v==='feed')renderFeed();
 }
 
-// Добавление фото
 function attachImg(e) {
   let file = e.target.files[0]; if(!file) return;
   let reader = new FileReader();
@@ -155,4 +127,23 @@ function attachImg(e) {
       let ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
       let dataUrl = canvas.toDataURL('image/jpeg', 0.7);
       document.getElementById('pText').dataset.img = dataUrl;
-      document.getElementById('imgPreview').innerHTML = `<img src="${dataUrl}" style="width:100%;border-radius:
+      document.getElementById('imgPreview').innerHTML = `<img src="${dataUrl}" style="width:100%;border-radius:12px;margin-top:10px;">`;
+    };
+    img.src = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Музыка
+function selectTrack(name, url) {
+  let player = document.getElementById('musicPlayer');
+  player.src = url;
+  player.style.display = 'block';
+  player.play();
+  document.getElementById('pText').dataset.audio = url;
+  document.getElementById('pText').dataset.audioName = name;
+  document.getElementById('musicModal').classList.remove('open');
+}
+
+function publish(){
+  let ta=
