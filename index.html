@@ -5,113 +5,167 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Скролл Online</title>
 <style>
-:root{--bg:#000;--card:#111;--line:#222;--text:#fff;--muted:#888;--acc:#fff;--acc-t:#000;--rad:16px;--fs:16px;--fw:800}
-body[data-theme="light"]{--bg:#f4f4f4;--card:#fff;--line:#ddd;--text:#000;--muted:#666;--acc:#000;--acc-t:#fff}
-body[data-theme="gray"]{--bg:#1a1a1a;--card:#242424;--line:#333;--text:#eee;--muted:#999;--acc:#fff;--acc-t:#000}
-body[data-theme="neon"]{--bg:#050505;--card:#111;--line:#1f1f3a;--text:#e8e8ff;--muted:#6a6a9a;--acc:#7b5cff;--acc-t:#fff}
-body[data-thin] *{--fw:500!important}
+/* БАЗОВЫЕ ПЕРЕМЕННЫЕ И ТЕМЫ */
+:root{--bg:#0a0a0a;--card:#161616;--card-hover:#1f1f1f;--line:#2a2a2a;--text:#f0f0f0;--muted:#888;--acc:#fff;--acc-t:#000;--rad:16px;--fs:15px;--fw:600}
+body[data-theme="light"]{--bg:#f0f2f5;--card:#ffffff;--card-hover:#f8f9fa;--line:#e4e6eb;--text:#050505;--muted:#65676b;--acc:#1877f2;--acc-t:#fff}
+body[data-theme="gray"]{--bg:#181818;--card:#242424;--card-hover:#2f2f2f;--line:#383838;--text:#e4e6eb;--muted:#b0b3b8;--acc:#fff;--acc-t:#000}
+body[data-theme="neon"]{--bg:#050505;--card:#11111a;--card-hover:#1a1a2e;--line:#2a2a4a;--text:#e8e8ff;--muted:#6a6a9a;--acc:#7b5cff;--acc-t:#fff}
+body[data-thin] *{--fw:400!important}
 body[data-anim="false"] * {transition: none !important; animation: none !important;}
+
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;font-weight:var(--fw);height:100vh;overflow:hidden;display:flex;justify-content:center}
-.app{width:100%;max-width:600px;height:100vh;display:flex;flex-direction:column;border-left:1px solid var(--line);border-right:1px solid var(--line);background:var(--bg)}
-header{display:none;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid var(--line)}
-.logo{font-size:24px;font-weight:900}.logo span{color:var(--muted)}
-.av{width:42px;height:42px;border-radius:50%;background:var(--acc);color:var(--acc-t);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;cursor:pointer;text-transform:uppercase;flex-shrink:0}
-.av.sm{width:32px;height:32px;font-size:14px}.av.lg{width:80px;height:80px;font-size:32px;margin:0 auto 10px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-weight:var(--fw);height:100vh;overflow:hidden;display:flex;justify-content:center;transition:background .3s,color .3s}
+.app{width:100%;max-width:900px;height:100vh;display:flex;background:var(--bg)}
+
+/* ШАПКА */
+header{display:none;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--card);z-index:10;position:sticky;top:0}
+.logo{font-size:24px;font-weight:900;letter-spacing:-1px}.logo span{color:var(--acc)}
+.hdr-actions{display:flex;gap:10px;align-items:center}
+.icon-btn{background:var(--bg);border:none;color:var(--text);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:.2s}
+.icon-btn:hover{background:var(--card-hover)}
+
+/* АВАТАРКИ */
+.av{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg, var(--acc), #888);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.2);transition:.2s}
+.av:hover{transform:scale(1.05)}
+.av.sm{width:32px;height:32px;font-size:14px}
+.av.lg{width:90px;height:90px;font-size:36px;margin:0 auto 15px;border:3px solid var(--bg);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
+.av.online{border:2px solid #31a24c}
+
+/* ОСНОВНОЙ КОНТЕНТ */
 main{flex:1;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:80px}
-.view{display:none;flex:1;flex-direction:column;padding:16px}
+.view{display:none;flex:1;flex-direction:column;padding:20px;animation:fadeIn 0.3s ease;max-width:600px;margin:0 auto;width:100%}
 .view.active{display:flex}
-.btn{background:var(--acc);color:var(--acc-t);border:none;padding:10px 18px;border-radius:20px;font-weight:900;font-size:14px;cursor:pointer;font-family:inherit;transition:.2s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* КНОПКИ И ИНПУТЫ */
+.btn{background:var(--acc);color:var(--acc-t);border:none;padding:10px 20px;border-radius:20px;font-weight:bold;font-size:14px;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{filter:brightness(0.9);transform:scale(1.02)}
+.btn:active{transform:scale(0.96)}
 .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
-.btn.sm{padding:6px 12px;font-size:12px;border-radius:12px}
-input,textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;color:var(--text);font-size:var(--fs);font-weight:var(--fw);outline:none;margin-bottom:10px;font-family:inherit}
-.post{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:16px;margin-bottom:12px;transition:var(--rad)}
-.p-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.p-head .name{font-size:15px;cursor:pointer}.p-head .time{font-size:12px;color:var(--muted);margin-left:auto}
-.p-text{font-size:var(--fs);line-height:1.4;white-space:pre-wrap}
-.act{background:none;border:none;color:var(--muted);font-weight:var(--fw);font-size:14px;cursor:pointer;display:flex;align-items:center;gap:5px;padding:4px}
-.act.liked{color:var(--text)}
-.comments{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
-.comment{display:flex;gap:8px;margin-bottom:10px}
-.c-body{font-size:14px;line-height:1.3;flex:1;font-weight:var(--fw)}
-.c-name{font-size:12px;color:var(--muted);display:block}
-.tabs{display:flex;gap:10px;margin-bottom:16px}
-.tab{flex:1;padding:10px;border-radius:20px;background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:900;font-size:14px;cursor:pointer;text-align:center;transition:.2s}
-.tab.active{background:var(--acc);color:var(--acc-t)}
-.chat-item{display:flex;gap:12px;align-items:center;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--rad);margin-bottom:10px;cursor:pointer;transition:.2s}
-#v-chat{padding:0;position:fixed;inset:0;background:var(--bg);z-index:50;max-width:600px;margin:0 auto}
-.chat-view{display:flex;flex-direction:column;height:100vh}
-.chat-header{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--line)}
-.c-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
-.msg-wrap{display:flex;flex-direction:column;max-width:85%}
+.btn.ghost:hover{background:var(--card-hover)}
+.btn.sm{padding:6px 14px;font-size:13px;border-radius:12px}
+input,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--text);font-size:var(--fs);font-weight:var(--fw);outline:none;margin-bottom:10px;font-family:inherit;transition:border .2s, box-shadow .2s}
+input:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(255,255,255,0.1)}
+
+/* ПОСТЫ */
+.composer{background:var(--card);border-radius:var(--rad);padding:16px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
+.post{background:var(--card);border-radius:var(--rad);padding:16px;margin-bottom:16px;transition:.2s;box-shadow:0 2px 10px rgba(0,0,0,0.05)}
+.post:hover{box-shadow:0 4px 15px rgba(0,0,0,0.15)}
+.p-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.p-head .name{font-size:15px;cursor:pointer;font-weight:bold}
+.p-head .time{font-size:12px;color:var(--muted);margin-left:auto}
+.p-text{font-size:var(--fs);line-height:1.5;white-space:pre-wrap;margin-bottom:12px}
+.p-img{width:100%;border-radius:12px;margin-bottom:12px;max-height:400px;object-fit:cover}
+
+/* ДЕЙСТВИЯ (ЛАЙКИ, КОММЕНТЫ) */
+.actions-row{display:flex;gap:20px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.act{background:none;border:none;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.1s;padding:4px 8px;border-radius:8px}
+.act:hover{background:var(--card-hover);color:var(--text)}
+.act.liked{color:#ff4d4d}
+.comments{margin-top:10px}
+.comment{display:flex;gap:10px;margin-bottom:12px;animation:fadeIn .2s}
+.c-body{font-size:14px;line-height:1.4;flex:1;background:var(--bg);padding:10px 14px;border-radius:12px;border-top-left-radius:4px}
+.c-name{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-weight:bold}
+.c-form{display:flex;gap:10px;margin-top:10px}
+.c-form input{margin:0;border-radius:20px}
+
+/* ВКЛАДКИ */
+.tabs{display:flex;gap:10px;margin-bottom:20px;background:var(--card);padding:5px;border-radius:20px}
+.tab{flex:1;padding:10px;border-radius:15px;background:transparent;border:none;color:var(--muted);font-weight:bold;font-size:14px;cursor:pointer;transition:.2s}
+.tab.active{background:var(--bg);color:var(--text);box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+
+/* СПИСОК ЧАТОВ */
+.chat-item{display:flex;gap:15px;align-items:center;padding:12px 16px;background:var(--card);border-radius:var(--rad);margin-bottom:10px;cursor:pointer;transition:.2s}
+.chat-item:hover{background:var(--card-hover);transform:translateX(5px)}
+.chat-item .unread{background:var(--acc);color:var(--acc-t);font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-left:auto}
+
+/* ОКНО ЧАТА */
+#v-chat{padding:0;position:fixed;inset:0;background:var(--bg);z-index:50;max-width:900px;margin:0 auto;display:none;flex-direction:column}
+#v-chat.active{display:flex}
+.chat-header{display:flex;align-items:center;gap:15px;padding:15px 20px;border-bottom:1px solid var(--line);background:var(--card);box-shadow:0 2px 10px rgba(0,0,0,0.1)}
+.c-msgs{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:10px}
+.msg-wrap{display:flex;flex-direction:column;max-width:75%}
 .msg-wrap.me{align-self:flex-end;align-items:flex-end}.msg-wrap.them{align-self:flex-start;align-items:flex-start}
-.msg{padding:10px 14px;border-radius:18px;font-size:15px;line-height:1.3;word-break:break-word;font-weight:var(--fw)}
+.msg{padding:12px 16px;border-radius:18px;font-size:15px;line-height:1.4;word-break:break-word;font-weight:var(--fw);box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 .msg.me{background:var(--acc);color:var(--acc-t);border-bottom-right-radius:4px}
-.msg.them{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px}
-.p-card{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:24px 16px;text-align:center;margin-bottom:16px}
-.s-block{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:16px;margin-bottom:16px}
-.s-block h3{margin:0 0 12px;font-size:13px;color:var(--muted);text-transform:uppercase}
-.t-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
-.t-opt{padding:12px 4px;border-radius:12px;border:2px solid var(--line);cursor:pointer;text-align:center;font-size:12px;font-weight:900;transition:.2s}
+.msg.them{background:var(--card);border-bottom-left-radius:4px}
+.msg-time{font-size:11px;color:var(--muted);margin-top:4px;margin-left:4px}
+
+/* ПРОФИЛЬ И НАСТРОЙКИ */
+.p-card{background:var(--card);border-radius:var(--rad);padding:30px 20px;text-align:center;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
+.s-block{background:var(--card);border-radius:var(--rad);padding:20px;margin-bottom:20px}
+.s-block h3{margin:0 0 15px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.t-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.t-opt{padding:15px 5px;border-radius:12px;border:2px solid transparent;background:var(--bg);cursor:pointer;text-align:center;font-size:12px;font-weight:bold;transition:.2s}
+.t-opt:hover{background:var(--card-hover)}
 .t-opt.active{border-color:var(--acc)}
-.t-dot{width:20px;height:20px;border-radius:50%;margin:0 auto 6px;border:1px solid var(--line)}
-.s-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.t-dot{width:24px;height:24px;border-radius:50%;margin:0 auto 8px;border:2px solid var(--line)}
+.s-row{display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--line)}
 .s-row:last-child{border-bottom:none}
-.tgl{width:48px;height:28px;border-radius:14px;background:var(--line);position:relative;cursor:pointer;transition:.2s}
+.tgl{width:50px;height:28px;border-radius:14px;background:var(--line);position:relative;cursor:pointer;transition:.3s}
 .tgl.on{background:var(--acc)}
-.tgl::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:var(--text);transition:.2s}
-.tgl.on::after{left:22px;background:var(--acc-t)}
-nav{display:none;position:fixed;bottom:0;width:100%;max-width:600px;background:var(--bg);border-top:1px solid var(--line);justify-content:space-around;padding:12px 0 20px;z-index:20}
-.nav-btn{background:none;border:none;color:var(--muted);font-weight:900;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
-.nav-btn .ico{font-size:22px}.nav-btn.active{color:var(--text)}
-.auth{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;justify-content:center;padding:32px;max-width:600px;margin:0 auto}
-.auth h1{font-size:46px;margin:0 0 8px;font-weight:900}
-.auth p{color:var(--muted);margin:0 0 30px;font-size:15px}
+.tgl::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.3s;box-shadow:0 2px 5px rgba(0,0,0,0.2)}
+.tgl.on::after{left:24px}
+input[type="range"]{width:100%;accent-color:var(--acc);margin-top:10px}
+.faq-item{background:var(--bg);padding:15px;border-radius:12px;margin-bottom:10px;cursor:pointer;transition:.2s}
+.faq-item:hover{background:var(--card-hover)}
+.faq-q{font-weight:bold;font-size:14px;display:flex;justify-content:space-between}
+.faq-a{font-size:13px;color:var(--muted);margin-top:10px;display:none;line-height:1.5}
+.faq-item.open .faq-a{display:block;animation:fadeIn .2s}
+
+/* НИЖНЯЯ НАВИГАЦИЯ */
+nav{display:none;position:fixed;bottom:0;width:100%;max-width:900px;background:var(--card);border-top:1px solid var(--line);justify-content:space-around;padding:10px 0 15px;z-index:20;box-shadow:0 -2px 10px rgba(0,0,0,0.1)}
+.nav-btn{background:none;border:none;color:var(--muted);font-weight:bold;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.2s}
+.nav-btn .ico{font-size:24px}
+.nav-btn.active{color:var(--acc);transform:translateY(-3px)}
+
+/* АВТОРИЗАЦИЯ */
+.auth{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;justify-content:center;padding:32px;max-width:400px;margin:0 auto;animation:fadeIn .3s}
+.auth h1{font-size:48px;margin:0 0 10px;font-weight:900;letter-spacing:-2px;text-align:center}
+.auth h1 span{color:var(--acc)}
+.auth p{color:var(--muted);margin:0 0 30px;font-size:15px;text-align:center}
 .switch{text-align:center;margin-top:20px;color:var(--muted);font-size:14px;cursor:pointer}
 .switch u{color:var(--text)}
-.err{color:#ff6b6b;font-size:13px;margin-top:10px;min-height:16px}
-.empty{text-align:center;padding:40px 16px;color:var(--muted);font-size:15px}
-input[type="range"]{width:100%;accent-color:var(--acc);margin-top:10px}
+.err{color:#ff4d4d;font-size:13px;margin-top:10px;min-height:16px;font-weight:bold;text-align:center}
+.empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:15px}
 </style>
 </head>
 <body data-theme="dark">
 <div class="app">
 <header id="header">
 <div class="logo">скролл<span>.</span></div>
-<div style="display:flex;gap:10px;align-items:center">
-<button class="btn ghost sm" onclick="show('search')">🔍</button>
-<button class="btn ghost sm" onclick="show('settings')">⚙️</button>
+<div class="hdr-actions">
+<button class="icon-btn" onclick="show('search')">🔍</button>
+<button class="icon-btn" onclick="show('settings')">⚙️</button>
 <div class="av sm" id="myAv" onclick="show('profile')">?</div>
 </div>
 </header>
 <main>
 <section class="view active" id="v-feed">
-<div style="margin-bottom:16px">
-<textarea id="pText" rows="2" placeholder="Что нового?"></textarea>
+<div class="composer">
+<textarea id="pText" rows="2" placeholder="Что нового? (без мата!)"></textarea>
 <div id="imgPreview"></div>
-<div style="display:flex;gap:10px;align-items:center">
-<label class="btn ghost" style="cursor:pointer;padding:10px 15px">📷 Фото<input type="file" accept="image/*" style="display:none" onchange="attachImg(event)"></label>
+<div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+<label class="btn ghost" style="cursor:pointer">📷 Фото<input type="file" accept="image/*" style="display:none" onchange="attachImg(event)"></label>
 <button class="btn" style="flex:1" onclick="publish()">Запостить</button>
 </div>
 </div>
 <div class="tabs"><div class="tab active" onclick="tab('recs')">✨ Рекомендации</div><div class="tab" onclick="tab('fresh')">🕐 Свежее</div></div>
 <div id="feed"></div>
 </section>
-<section class="view" id="v-chats"><h2 style="margin:0 0 16px">Сообщения</h2><div id="chatsList"></div></section>
+<section class="view" id="v-chats"><h2 style="margin:0 0 20px">Сообщения</h2><div id="chatsList"></div></section>
 <section class="view" id="v-chat">
-<div class="chat-view">
 <div class="chat-header" id="cHeader"></div>
 <div class="c-msgs" id="cMsgs"></div>
-<div style="display:flex;gap:10px;padding:12px;border-top:1px solid var(--line)">
-<input id="cInput" placeholder="Сообщение..." onkeydown="if(event.key==='Enter')send()" style="margin:0">
+<div style="display:flex;gap:10px;padding:15px 20px;border-top:1px solid var(--line);background:var(--card)">
+<input id="cInput" placeholder="Напиши сообщение..." onkeydown="if(event.key==='Enter')send()" style="margin:0">
 <button class="btn" onclick="send()">↑</button>
-</div>
 </div>
 </section>
 <section class="view" id="v-search">
 <input id="sInput" placeholder="Поиск по нику..." oninput="renderSearch()">
-<div style="display:flex;gap:10px;margin-bottom:16px">
-<input id="idInput" placeholder="Введи ID (@1234)" style="margin:0">
+<div style="display:flex;gap:10px;margin-bottom:20px">
+<input id="idInput" placeholder="ID (@1234)" style="margin:0">
 <button class="btn" onclick="searchById()">Найти</button>
 </div>
 <div id="sRes"></div>
@@ -120,7 +174,7 @@ input[type="range"]{width:100%;accent-color:var(--acc);margin-top:10px}
 <section class="view" id="v-profile">
 <div class="p-card" id="pCard"></div>
 <div class="s-block"><h3>Подписчики (<span id="fCount">0</span>)</h3><div id="fList"></div></div>
-<div class="s-block"><h3>Заявки</h3><div id="rList"></div></div>
+<div class="s-block"><h3>Заявки в друзья</h3><div id="rList"></div></div>
 <button class="btn ghost" style="width:100%" onclick="logout()">Выйти</button>
 </section>
 <section class="view" id="v-settings">
@@ -133,8 +187,13 @@ input[type="range"]{width:100%;accent-color:var(--acc);margin-top:10px}
 <div class="s-block"><h3>Интерфейс</h3>
 <div class="s-row"><span>Жирный шрифт</span><div class="tgl" id="tBold" onclick="toggleBold()"></div></div>
 <div class="s-row"><span>Анимации</span><div class="tgl" id="tAnim" onclick="toggleAnim()"></div></div>
-<div class="s-row" style="flex-direction:column;align-items:stretch"><span>Размер шрифта (<span id="fsVal">16</span>px)</span><input type="range" min="14" max="22" value="16" id="fSlider" oninput="setFS(this.value);document.getElementById('fsVal').innerText=this.value"></div>
+<div class="s-row" style="flex-direction:column;align-items:stretch"><span>Размер шрифта (<span id="fsVal">15</span>px)</span><input type="range" min="12" max="22" value="15" id="fSlider" oninput="setFS(this.value);document.getElementById('fsVal').innerText=this.value"></div>
 <div class="s-row" style="flex-direction:column;align-items:stretch"><span>Скругление углов (<span id="radVal">16</span>px)</span><input type="range" min="0" max="30" value="16" id="rSlider" oninput="setRad(this.value);document.getElementById('radVal').innerText=this.value"></div>
+</div>
+<div class="s-block"><h3>FAQ (Помощь)</h3>
+<div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Как поменять обложку? <span>▼</span></div><div class="faq-a">Зайди в свой профиль (вкладка «Я») и нажми «Сменить обложку».</div></div>
+<div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Почему вместо слов звездочки? <span>▼</span></div><div class="faq-a">Работает авто-цензура. Матерные слова заменяются на ***.</div></div>
+<div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Как найти друга по ID? <span>▼</span></div><div class="faq-a">Нажми на лупу и введи ID друга в нижнее поле.</div></div>
 </div>
 <div class="s-block"><h3>Изменить ID</h3><div style="display:flex;gap:10px"><input id="newId" placeholder="Новый ID (4 цифры)" maxlength="4" style="margin:0"><button class="btn" onclick="changeId()">Сменить</button></div><div class="err" id="idErr" style="margin-top:5px"></div></div>
 <div class="s-block"><h3>Данные</h3><div class="s-row"><span>Очистить всё</span><button class="btn ghost sm" onclick="clearAll()">Стереть</button></div></div>
@@ -155,7 +214,6 @@ input[type="range"]{width:100%;accent-color:var(--acc);margin-top:10px}
 <div class="err" id="aErr"></div>
 <div class="switch" onclick="authToggle()" id="aSwitch">нет аккаунта? <u>создать</u></div>
 </div>
-
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="app.js"></script>
