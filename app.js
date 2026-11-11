@@ -10,7 +10,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let DB = { users: [], posts: [], msgs: [], friends: [] };
+let DB = { users: [], posts: [], msgs: [], channels: [] };
 let u = JSON.parse(localStorage.getItem('scroll_session') || 'null');
 let aMode = 'login', aChat = null;
 let dbLoaded = false;
@@ -20,21 +20,22 @@ db.ref('/').on('value', snap => {
   DB.users = data.users ? Object.values(data.users).filter(x => x && x.id && x.nick) : [];
   DB.posts = data.posts ? Object.values(data.posts).filter(x => x && x.id) : [];
   DB.msgs = data.msgs ? Object.values(data.msgs).filter(x => x && x.from) : [];
-  DB.friends = data.friends ? Object.values(data.friends).filter(x => x && x.a) : [];
+  DB.channels = data.channels ? Object.values(data.channels).filter(x => x && x.id) : [];
   dbLoaded = true;
 
   if(document.getElementById('v-feed').classList.contains('active')) renderFeed();
   if(document.getElementById('v-chats').classList.contains('active')) renderChats();
+  if(document.getElementById('v-channels').classList.contains('active')) renderChannelsPage();
   if(aChat) renderMsgs(aChat);
 });
 
 const ini = n => n ? String(n)[0].toUpperCase() : '?';
-const gU = id => DB.users.find(x => x.id === id) || {nick:'Удалён', id};
+const gU = id => DB.users.find(x => x.id === id) || {nick:'Неизвестный', id};
 
 function authToggle(){
   aMode=aMode==='login'?'register':'login';
   document.getElementById('aBtn').textContent=aMode==='login'?'Войти':'Создать аккаунт';
-  document.getElementById('aSwitch').innerHTML=aMode==='login'?'Нет аккаунта? <span style="color:var(--acc)">Создать</span>':'Уже есть аккаунт? <span style="color:var(--acc)">Войти</span>';
+  document.getElementById('aSwitch').innerHTML=aMode==='login'?'Нет аккаунта? <span style="color:#fff;text-decoration:underline">Создать</span>':'Уже есть аккаунт? <span style="color:#fff;text-decoration:underline">Войти</span>';
   document.getElementById('aErr').textContent='';
 }
 
@@ -75,9 +76,74 @@ function show(v){
   
   if(v==='chats') renderChats();
   if(v==='feed') renderFeed();
+  if(v==='channels') renderChannelsPage();
 }
 
-// КАРТИНКИ
+// ЧАТЫ
+function renderChats(){
+  let list = document.getElementById('chatList'); if(!list) return;
+  let ms = DB.msgs.filter(m => m.from === u.id || m.to === u.id);
+  let chatters = [...new Set(ms.map(m => m.from === u.id ? m.to : m.from))];
+  let html = chatters.map(id => {
+    let o = gU(id);
+    return `<div class="chat-item" onclick="openChat('${o.id}')" style="padding:12px;cursor:pointer;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px">
+      <div class="av">${ini(o.nick)}</div><div style="font-weight:bold;font-size:14px;color:#fff">${o.nick}</div>
+    </div>`;
+  }).join('');
+  list.innerHTML = html || '<div style="color:var(--muted);text-align:center;padding:20px;font-size:12px">Нет переписок. Найди друга в Поиске!</div>';
+}
+
+function openChat(id){
+  aChat = id;
+  document.getElementById('chatArea').style.display = 'flex';
+  document.getElementById('emptyChat').style.display = 'none';
+  document.getElementById('cHeader').innerHTML = `<div class="av">${ini(gU(id).nick)}</div> ${gU(id).nick}`;
+  renderMsgs(id);
+}
+
+function renderMsgs(id){
+  let h = document.getElementById('cMsgs'); if(!h) return;
+  let ms = DB.msgs.filter(m=>(m.from===u.id && m.to===id)||(m.from===id && m.to===u.id)).sort((a,b)=>a.time-b.time);
+  h.innerHTML = ms.map(m=>`<div class="msg-wrap ${m.from===u.id?'me':'them'}"><div class="msg">${m.text}</div></div>`).join('');
+  h.scrollTop = h.scrollHeight;
+}
+
+function send(){
+  let i = document.getElementById('cInput'), t = i.value.trim();
+  if(!t || !aChat) return;
+  db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:aChat, text:t, time:Date.now()});
+  i.value = '';
+}
+
+// КАНАЛЫ
+function renderChannelsPage(){
+  let list = document.getElementById('channelsList'); if(!list) return;
+  let html = DB.channels.map(ch => `
+    <div style="background:var(--card);border:1px solid var(--line);padding:15px;border-radius:8px;margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="openChat('${ch.id}')">
+      <div class="av" style="background:#fff;color:#000">📢</div>
+      <div style="font-weight:bold;color:#fff">${ch.name}</div>
+    </div>
+  `).join('');
+  list.innerHTML = html || '<div style="color:var(--muted);text-align:center;padding:20px">Нет каналов</div>';
+}
+
+function createChannel(){
+  let name = document.getElementById('newChannelName').value.trim();
+  if(!name) return;
+  db.ref('channels/'+Date.now()).set({id:Date.now().toString(), name:name, owner:u.id});
+  document.getElementById('newChannelName').value = '';
+}
+
+// ПОИСК
+function findUser(){
+  let val = document.getElementById('searchId').value.trim().replace('@','');
+  let f = DB.users.find(x => x.id === val);
+  if(!f) return alert('Пользователь не найден!');
+  show('chats');
+  openChat(f.id);
+}
+
+// ЛЕНТА
 function attachImg(e) {
   let file = e.target.files[0]; if(!file) return;
   let reader = new FileReader();
@@ -91,7 +157,7 @@ function attachImg(e) {
       let ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
       let dataUrl = canvas.toDataURL('image/jpeg', 0.6);
       document.getElementById('pText').dataset.img = dataUrl;
-      document.getElementById('imgPreview').innerHTML = `<img src="${dataUrl}" style="width:100%;border-radius:12px;margin-bottom:10px;">`;
+      document.getElementById('imgPreview').innerHTML = `<img src="${dataUrl}" style="width:100%;border-radius:8px;margin-bottom:8px;">`;
     };
     img.src = evt.target.result;
   };
@@ -108,79 +174,18 @@ function publish(){
 function renderFeed(){
   let f=document.getElementById('feed'); if(!f) return;
   let ps=DB.posts.sort((a,b)=>b.time-a.time);
-  if(!ps.length) return f.innerHTML='<div style="text-align:center;color:var(--muted);padding:50px">Тут пусто...</div>';
+  if(!ps.length) return f.innerHTML='<div style="text-align:center;color:var(--muted);padding:30px;font-size:13px">Тут пусто...</div>';
   
   f.innerHTML=ps.map(p=>`
     <div class="post">
       <div class="post-head">
         <div class="av">${ini(p.aNick)}</div>
-        <div style="font-weight:bold;color:var(--text)">${p.aNick}</div>
+        <div style="font-weight:bold;color:#fff;font-size:14px">${p.aNick}</div>
       </div>
-      <div style="font-size:15px;color:var(--text);line-height:1.5">${p.text}</div>
+      <div style="font-size:14px;color:#fff;line-height:1.4">${p.text}</div>
       ${p.img ? `<img src="${p.img}" class="post-img">` : ''}
     </div>
   `).join('');
 }
 
-// ЧАТЫ
-function renderChats(){
-  let list = document.getElementById('chatList'); if(!list) return;
-  let html = `
-    <div class="chat-item" onclick="openChat('bot1')">
-      <div class="av" style="background:#ff4757;width:40px;height:40px;font-size:16px">😂</div>
-      <div><div style="font-weight:bold;color:var(--text);font-size:14px">Мемный Бот</div></div>
-    </div>
-    <div class="chat-item" onclick="openChat('bot2')">
-      <div class="av" style="background:#2ed573;width:40px;height:40px;font-size:16px">👾</div>
-      <div><div style="font-weight:bold;color:var(--text);font-size:14px">Геймерский Бот</div></div>
-    </div>
-  `;
-  let f = DB.friends.filter(x=>x.a===u.id||x.b===u.id);
-  f.forEach(x => {
-    let o = gU(x.a===u.id?x.b:x.a);
-    html += `<div class="chat-item" onclick="openChat('${o.id}')"><div class="av" style="width:40px;height:40px;font-size:16px">${ini(o.nick)}</div><div style="font-weight:bold;color:var(--text);font-size:14px">${o.nick}</div></div>`;
-  });
-  list.innerHTML = html;
-}
-
-function openChat(id){
-  aChat = id;
-  document.getElementById('chatArea').style.display = 'flex';
-  document.getElementById('emptyChat').style.display = 'none';
-  
-  let h = document.getElementById('cHeader');
-  if(id === 'bot1') h.innerHTML = `<div class="av" style="background:#ff4757;width:36px;height:36px;font-size:14px">😂</div> Мемный Бот`;
-  else if(id === 'bot2') h.innerHTML = `<div class="av" style="background:#2ed573;width:36px;height:36px;font-size:14px">👾</div> Геймерский Бот`;
-  else h.innerHTML = `<div class="av" style="width:36px;height:36px;font-size:14px">${ini(gU(id).nick)}</div> ${gU(id).nick}`;
-  
-  renderMsgs(id);
-}
-
-function renderMsgs(id){
-  let h = document.getElementById('cMsgs'); if(!h) return;
-  let ms = DB.msgs.filter(m=>(m.from===u.id && m.to===id)||(m.from===id && m.to===u.id)).sort((a,b)=>a.time-b.time);
-  let html = ms.map(m=>`<div class="msg-wrap ${m.from===u.id?'me':'them'}"><div class="msg">${m.text}</div></div>`).join('');
-  if(ms.length === 0 && id === 'bot1') html = `<div class="msg-wrap them"><div class="msg">Привет! Я собираю мемы. Напиши что-нибудь смешное!</div></div>`;
-  if(ms.length === 0 && id === 'bot2') html = `<div class="msg-wrap them"><div class="msg">Йоу! Я геймерский бот. Обсудим игры?</div></div>`;
-  h.innerHTML = html;
-  h.scrollTop = h.scrollHeight;
-}
-
-function send(){
-  let i = document.getElementById('cInput'), t = i.value.trim();
-  if(!t || !aChat) return;
-  
-  if(aChat === 'bot1') {
-    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:'bot1', text:t, time:Date.now()});
-    setTimeout(()=>db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:'bot1', to:u.id, text:'Ахаха, смешно! 😂', time:Date.now()}), 1000);
-  } else if(aChat === 'bot2') {
-    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:'bot2', text:t, time:Date.now()});
-    setTimeout(()=>db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:'bot2', to:u.id, text:'Согласен, го в катку! 🎮', time:Date.now()}), 1000);
-  } else {
-    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:aChat, text:t, time:Date.now()});
-  }
-  
-  i.value = '';
-}
-
-if(u){ document.getElementById('auth').style.display='none'; show('chats'); }
+if(u){ document.getElementById('auth').style.display='none'; show('feed'); }
