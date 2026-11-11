@@ -15,9 +15,6 @@ let u = JSON.parse(localStorage.getItem('scroll_session') || 'null');
 let aMode = 'login', aChat = null;
 let dbLoaded = false;
 
-const BAD_WORDS = ['хуй', 'пизда', 'ебать', 'блять', 'сука'];
-function censor(text) { let clean = String(text || ''); BAD_WORDS.forEach(w => { clean = clean.replace(new RegExp(w, 'gi'), '***'); }); return clean; }
-
 db.ref('/').on('value', snap => {
   const data = snap.val() || {};
   DB.users = data.users ? Object.values(data.users).filter(x => x && x.id && x.nick) : [];
@@ -37,7 +34,7 @@ const gU = id => DB.users.find(x => x.id === id) || {nick:'Удалён', id};
 function authToggle(){
   aMode=aMode==='login'?'register':'login';
   document.getElementById('aBtn').textContent=aMode==='login'?'Войти':'Создать аккаунт';
-  document.getElementById('aSwitch').innerHTML=aMode==='login'?'Нет аккаунта? <u style="color:var(--acc)">Создать</u>':'Уже есть аккаунт? <u style="color:var(--acc)">Войти</u>';
+  document.getElementById('aSwitch').innerHTML=aMode==='login'?'Нет аккаунта? <span style="color:var(--acc)">Создать</span>':'Уже есть аккаунт? <span style="color:var(--acc)">Войти</span>';
   document.getElementById('aErr').textContent='';
 }
 
@@ -80,32 +77,69 @@ function show(v){
   if(v==='feed') renderFeed();
 }
 
+// КАРТИНКИ
+function attachImg(e) {
+  let file = e.target.files[0]; if(!file) return;
+  let reader = new FileReader();
+  reader.onload = function(evt) {
+    let img = new Image();
+    img.onload = function() {
+      let canvas = document.createElement('canvas');
+      let MAX = 600; let width = img.width, height = img.height;
+      if (width > height) { if (width > MAX) { height *= MAX / width; width = MAX; } } else { if (height > MAX) { width *= MAX / height; height = MAX; } }
+      canvas.width = width; canvas.height = height;
+      let ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+      let dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+      document.getElementById('pText').dataset.img = dataUrl;
+      document.getElementById('imgPreview').innerHTML = `<img src="${dataUrl}" style="width:100%;border-radius:12px;margin-bottom:10px;">`;
+    };
+    img.src = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function publish(){
+  let ta=document.getElementById('pText'), t=ta.value.trim(), img=ta.dataset.img||'';
+  if(!t && !img) return;
+  db.ref('posts/'+Date.now()).set({id:Date.now().toString(), aId:u.id, aNick:u.nick, text:t, img:img, time:Date.now()});
+  ta.value=''; ta.dataset.img=''; document.getElementById('imgPreview').innerHTML='';
+}
+
+function renderFeed(){
+  let f=document.getElementById('feed'); if(!f) return;
+  let ps=DB.posts.sort((a,b)=>b.time-a.time);
+  if(!ps.length) return f.innerHTML='<div style="text-align:center;color:var(--muted);padding:50px">Тут пусто...</div>';
+  
+  f.innerHTML=ps.map(p=>`
+    <div class="post">
+      <div class="post-head">
+        <div class="av">${ini(p.aNick)}</div>
+        <div style="font-weight:bold;color:var(--text)">${p.aNick}</div>
+      </div>
+      <div style="font-size:15px;color:var(--text);line-height:1.5">${p.text}</div>
+      ${p.img ? `<img src="${p.img}" class="post-img">` : ''}
+    </div>
+  `).join('');
+}
+
 // ЧАТЫ
 function renderChats(){
   let list = document.getElementById('chatList'); if(!list) return;
-  
-  // Тестовые чаты (Боты) для интерактива
   let html = `
     <div class="chat-item" onclick="openChat('bot1')">
-      <div class="av sm" style="background:#ff4757">😂</div>
-      <div class="chat-info"><div class="chat-name">Мемный Бот</div><div class="chat-last">Скинь мем!</div></div>
+      <div class="av" style="background:#ff4757;width:40px;height:40px;font-size:16px">😂</div>
+      <div><div style="font-weight:bold;color:var(--text);font-size:14px">Мемный Бот</div></div>
     </div>
     <div class="chat-item" onclick="openChat('bot2')">
-      <div class="av sm" style="background:#2ed573">👾</div>
-      <div class="chat-info"><div class="chat-name">Геймерский Бот</div><div class="chat-last">Го в доту?</div></div>
+      <div class="av" style="background:#2ed573;width:40px;height:40px;font-size:16px">👾</div>
+      <div><div style="font-weight:bold;color:var(--text);font-size:14px">Геймерский Бот</div></div>
     </div>
   `;
-  
-  // Реальные друзья
   let f = DB.friends.filter(x=>x.a===u.id||x.b===u.id);
   f.forEach(x => {
     let o = gU(x.a===u.id?x.b:x.a);
-    html += `<div class="chat-item" onclick="openChat('${o.id}')">
-      <div class="av sm">${ini(o.nick)}</div>
-      <div class="chat-info"><div class="chat-name">${o.nick}</div><div class="chat-last">Нажми чтобы открыть</div></div>
-    </div>`;
+    html += `<div class="chat-item" onclick="openChat('${o.id}')"><div class="av" style="width:40px;height:40px;font-size:16px">${ini(o.nick)}</div><div style="font-weight:bold;color:var(--text);font-size:14px">${o.nick}</div></div>`;
   });
-  
   list.innerHTML = html;
 }
 
@@ -115,9 +149,9 @@ function openChat(id){
   document.getElementById('emptyChat').style.display = 'none';
   
   let h = document.getElementById('cHeader');
-  if(id === 'bot1') h.innerHTML = `<div class="av sm" style="background:#ff4757">😂</div> Мемный Бот`;
-  else if(id === 'bot2') h.innerHTML = `<div class="av sm" style="background:#2ed573">👾</div> Геймерский Бот`;
-  else h.innerHTML = `<div class="av sm">${ini(gU(id).nick)}</div> ${gU(id).nick}`;
+  if(id === 'bot1') h.innerHTML = `<div class="av" style="background:#ff4757;width:36px;height:36px;font-size:14px">😂</div> Мемный Бот`;
+  else if(id === 'bot2') h.innerHTML = `<div class="av" style="background:#2ed573;width:36px;height:36px;font-size:14px">👾</div> Геймерский Бот`;
+  else h.innerHTML = `<div class="av" style="width:36px;height:36px;font-size:14px">${ini(gU(id).nick)}</div> ${gU(id).nick}`;
   
   renderMsgs(id);
 }
@@ -125,13 +159,9 @@ function openChat(id){
 function renderMsgs(id){
   let h = document.getElementById('cMsgs'); if(!h) return;
   let ms = DB.msgs.filter(m=>(m.from===u.id && m.to===id)||(m.from===id && m.to===u.id)).sort((a,b)=>a.time-b.time);
-  
   let html = ms.map(m=>`<div class="msg-wrap ${m.from===u.id?'me':'them'}"><div class="msg">${m.text}</div></div>`).join('');
-  
-  // Стартовые сообщения для ботов
   if(ms.length === 0 && id === 'bot1') html = `<div class="msg-wrap them"><div class="msg">Привет! Я собираю мемы. Напиши что-нибудь смешное!</div></div>`;
   if(ms.length === 0 && id === 'bot2') html = `<div class="msg-wrap them"><div class="msg">Йоу! Я геймерский бот. Обсудим игры?</div></div>`;
-  
   h.innerHTML = html;
   h.scrollTop = h.scrollHeight;
 }
@@ -141,31 +171,16 @@ function send(){
   if(!t || !aChat) return;
   
   if(aChat === 'bot1') {
-    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:'bot1', text:censor(t), time:Date.now()});
+    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:'bot1', text:t, time:Date.now()});
     setTimeout(()=>db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:'bot1', to:u.id, text:'Ахаха, смешно! 😂', time:Date.now()}), 1000);
   } else if(aChat === 'bot2') {
-    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:'bot2', text:censor(t), time:Date.now()});
+    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:'bot2', text:t, time:Date.now()});
     setTimeout(()=>db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:'bot2', to:u.id, text:'Согласен, го в катку! 🎮', time:Date.now()}), 1000);
   } else {
-    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:aChat, text:censor(t), time:Date.now()});
+    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:aChat, text:t, time:Date.now()});
   }
   
   i.value = '';
-}
-
-// ЛЕНТА
-function publish(){
-  let ta=document.getElementById('pText'), t=ta.value.trim();
-  if(!t) return;
-  db.ref('posts/'+Date.now()).set({id:Date.now().toString(),aId:u.id,aNick:u.nick,text:censor(t),time:Date.now()});
-  ta.value='';
-}
-
-function renderFeed(){
-  let f=document.getElementById('feed'); if(!f) return;
-  let ps=DB.posts.sort((a,b)=>b.time-a.time);
-  if(!ps.length) return f.innerHTML='<div style="text-align:center;color:var(--muted);padding:50px">Тут пусто...</div>';
-  f.innerHTML=ps.map(p=>`<div class="post"><div style="font-weight:bold;color:var(--acc);margin-bottom:10px">${p.aNick}</div><div style="color:#fff;font-size:15px;line-height:1.5">${p.text}</div></div>`).join('');
 }
 
 if(u){ document.getElementById('auth').style.display='none'; show('chats'); }
