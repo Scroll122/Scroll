@@ -148,7 +148,7 @@ nav{display:none;position:fixed;bottom:0;width:100%;max-width:600px;background:v
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script>
-// --- ТВОИ КЛЮЧИ FIREBASE ---
+// Твои ключи Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDoangT_YXrnOvnlFex6GLD5Z4VpLHdDTs",
   authDomain: "scroll-1e505.firebaseapp.com",
@@ -158,17 +158,14 @@ const firebaseConfig = {
   messagingSenderId: "407623450352",
   appId: "1:407623450352:web:49734fcf79185ce6b88c35"
 };
-
-// Инициализация Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Локальное состояние для синхронизации
 let DB = { users: [], posts: [], msgs: [], friends: [], reqs: [] };
 let u = JSON.parse(localStorage.getItem('scroll_session') || 'null');
 let aMode = 'login', cTab = 'recs', aChat = null;
 
-// Слушаем изменения из базы данных в реальном времени
+// Слушатель базы данных в реальном времени
 db.ref('/').on('value', snap => {
   const data = snap.val() || {};
   DB.users = data.users ? Object.values(data.users) : [];
@@ -190,7 +187,6 @@ const gT = t => { let d=new Date(t); return d.getHours().toString().padStart(2,'
 const ini = n => n ? n[0].toUpperCase() : '?';
 const gU = id => DB.users.find(x => x.id === id) || {nick:'Удалён', id};
 
-// Настройки темы
 function appSet(){let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16}');document.body.dataset.theme=s.theme;if(s.bold)document.body.removeAttribute('data-thin');else document.body.setAttribute('data-thin','1');document.documentElement.style.setProperty('--fs',s.fs+'px');let t=document.getElementById('tBold');if(t)t.classList.toggle('on',s.bold);let sl=document.getElementById('fSlider');if(sl)sl.value=s.fs}
 const setTheme = t => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16}'); s.theme=t; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
 const toggleBold = () => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16}'); s.bold=!s.bold; localStorage.setItem('setts',JSON.stringify(s)); appSet(); };
@@ -198,7 +194,6 @@ const setFS = v => { let s=JSON.parse(localStorage.getItem('setts')||'{"theme":"
 const clearAll = () => { if(confirm('Стереть всё?')){ localStorage.clear(); location.reload(); } };
 appSet();
 
-// Авторизация
 function authToggle(){aMode=aMode==='login'?'register':'login';document.getElementById('aBtn').textContent=aMode==='login'?'Войти':'Создать';document.getElementById('aSub').textContent=aMode==='login'?'залетай в движ':'придумай ник и пароль';document.getElementById('aSwitch').innerHTML=aMode==='login'?'нет аккаунта? <u>создать</u>':'уже есть? <u>войти</u>';document.getElementById('aErr').textContent=''}
 
 function authSubmit(){
@@ -210,7 +205,7 @@ function authSubmit(){
     let nu={id:genId(),nick:n,pass:p};
     db.ref('users/'+nu.id).set(nu).then(()=>{
       u={id:nu.id,nick:nu.nick};localStorage.setItem('scroll_session',JSON.stringify(u));location.reload();
-    });
+    }).catch(err=>e.textContent='Ошибка Firebase. Проверьте Rules!');
   }else{
     let f=DB.users.find(x=>x.nick.toLowerCase()===n.toLowerCase()&&x.pass===p);
     if(!f)return e.textContent='неверно';
@@ -233,17 +228,32 @@ function changeId(){
 
 function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));let el=document.getElementById('v-'+v);if(el)el.classList.add('active');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));let nb=document.getElementById('n-'+v);if(nb)nb.classList.add('active');if(v==='profile')renderProfile();if(v==='chats')renderChats();if(v==='feed')renderFeed()}
 
-// Посты
-function publish(){let ta=document.getElementById('pText'),t=ta.value.trim();if(!t)return;let id=Date.now().toString();db.ref('posts/'+id).set({id,aId:u.id,aNick:u.nick,text:t,time:Date.now(),likes:[],cmts:[]});ta.value='';}
+function publish(){
+  let ta=document.getElementById('pText'),t=ta.value.trim();
+  if(!t)return;
+  let id=Date.now().toString();
+  db.ref('posts/'+id).set({id:id,aId:u.id,aNick:u.nick,text:t,time:Date.now(),likes:[],cmts:[]})
+  .then(()=>{ta.value='';})
+  .catch(()=>alert('Ошибка! Разрешите запись в Firebase Rules!'));
+}
+
 function tab(t){cTab=t;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.textContent.includes(t==='recs'?'Рекомендации':'Свежее')));renderFeed()}
 
-function renderFeed(){let f=document.getElementById('feed'),ps=DB.posts.slice();if(cTab==='recs')ps.sort((a,b)=>(b.likes.length*2+b.cmts.length*1.5-(Date.now()-b.time)/36e5*.3)-(a.likes.length*2+a.cmts.length*1.5-(Date.now()-a.time)/36e5*.3));else ps.sort((a,b)=>b.time-a.time);if(!ps.length)return f.innerHTML='<div class="empty">тут пусто...</div>';f.innerHTML=ps.map(p=>{let l=p.likes.includes(u.id),m=p.aId===u.id,ath=gU(p.aId);return `<article class="post"><div class="p-head"><div class="av" onclick="openU('${p.aId}')">${ini(p.aNick)}</div><div class="name" onclick="openU('${p.aId}')">${esc(p.aNick)} <span style="color:var(--muted);font-size:12px">@${ath.id}</span>${m?' · ты':''}</div><div class="time">${ago(p.time)}</div></div><div class="p-text">${esc(p.text)}</div><div style="display:flex;gap:15px;margin-top:12px"><button class="act ${l?'liked':''}" onclick="like('${p.id}')">${l?'🖤':'🤍'} ${p.likes.length}</button><button class="act" onclick="document.querySelector('.ci-${p.id}').focus()">💬 ${p.cmts.length}</button>${m?`<button class="act" onclick="delPost('${p.id}')">🗑</button>`:''}</div><div class="comments">${p.cmts.map(c=>`<div class="comment"><div class="av sm">${ini(c.n)}</div><div class="c-body"><span class="c-name">${esc(c.n)}</span>${esc(c.t)}</div></div>`).join('')}<input class="ci-${p.id}" placeholder="коммент..." onkeydown="if(event.key==='Enter')addCmt('${p.id}',this)" style="margin-top:10px"></div></article>`}).join('')}
+function renderFeed(){
+  let f=document.getElementById('feed'),ps=DB.posts.slice();
+  if(cTab==='recs')ps.sort((a,b)=>(b.likes.length*2+b.cmts.length*1.5-(Date.now()-b.time)/36e5*.3)-(a.likes.length*2+a.cmts.length*1.5-(Date.now()-a.time)/36e5*.3));
+  else ps.sort((a,b)=>b.time-a.time);
+  if(!ps.length)return f.innerHTML='<div class="empty">тут пусто...</div>';
+  f.innerHTML=ps.map(p=>{
+    let l=p.likes.includes(u.id),m=p.aId===u.id,ath=gU(p.aId);
+    return `<article class="post"><div class="p-head"><div class="av" onclick="openU('${p.aId}')">${ini(p.aNick)}</div><div class="name" onclick="openU('${p.aId}')">${esc(p.aNick)} <span style="color:var(--muted);font-size:12px">@${ath.id}</span>${m?' · ты':''}</div><div class="time">${ago(p.time)}</div></div><div class="p-text">${esc(p.text)}</div><div style="display:flex;gap:15px;margin-top:12px"><button class="act ${l?'liked':''}" onclick="like('${p.id}')">${l?'🖤':'🤍'} ${p.likes.length}</button><button class="act" onclick="document.querySelector('.ci-${p.id}').focus()">💬 ${p.cmts.length}</button>${m?`<button class="act" onclick="delPost('${p.id}')">🗑</button>`:''}</div><div class="comments">${p.cmts.map(c=>`<div class="comment"><div class="av sm">${ini(c.n)}</div><div class="c-body"><span class="c-name">${esc(c.n)}</span>${esc(c.t)}</div></div>`).join('')}<input class="ci-${p.id}" placeholder="коммент..." onkeydown="if(event.key==='Enter')addCmt('${p.id}',this)" style="margin-top:10px"></div></article>`;
+  }).join('');
+}
 
 function like(id){let p=DB.posts.find(x=>x.id===id);if(!p)return;let l=[...p.likes],i=l.indexOf(u.id);if(i===-1)l.push(u.id);else l.splice(i,1);db.ref('posts/'+id+'/likes').set(l)}
 function delPost(id){if(confirm('Удалить?'))db.ref('posts/'+id).remove()}
 function addCmt(id,inp){let t=inp.value.trim();if(!t)return;let p=DB.posts.find(x=>x.id===id);let cmts=[...p.cmts];cmts.push({id:Date.now().toString(),n:u.nick,t});db.ref('posts/'+id+'/cmts').set(cmts);inp.value='';}
 
-// Поиск и друзья
 function renderSearch(){let q=document.getElementById('sInput').value.toLowerCase().trim(),r=document.getElementById('sRes');if(!q)return r.innerHTML='';let us=DB.users.filter(x=>x.nick.toLowerCase().includes(q)&&x.id!==u.id);if(!us.length)return r.innerHTML='<div class="empty">не найдено</div>';r.innerHTML=us.map(x=>`<div style="display:flex;gap:12px;align-items:center;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--rad);margin-bottom:10px"><div class="av">${ini(x.nick)}</div><div style="flex:1"><div>${esc(x.nick)}</div><div style="font-size:12px;color:var(--muted)">@${x.id}</div></div><button class="btn sm" onclick="openU('${x.id}')">Профиль</button></div>`).join('')}
 function searchById(){let id=document.getElementById('idInput').value.trim().replace('@','');let t=DB.users.find(x=>x.id===id);if(!t)return alert('Не найден');if(t.id===u.id)return show('profile');openU(t.id);}
 function openU(id){if(id===u.id)return show('profile');let t=gU(id),fs=DB.friends.some(f=>(f.a===u.id&&f.b===id)||(f.a===id&&f.b===u.id)),rq=DB.reqs.some(r=>r.from===u.id&&r.to===id);let h=fs?'Вы подписаны':(rq?'Заявка отправлена':`<button class="btn sm" onclick="addFriend('${id}')">Подписаться</button>`);document.getElementById('uCard').innerHTML=`<div class="av lg">${ini(t.nick)}</div><h2 style="margin:10px 0">${esc(t.nick)}</h2><div style="color:var(--muted);margin-bottom:16px">@${t.id}</div><div>${h}</div>`;show('uProfile')}
@@ -252,7 +262,6 @@ function renderProfile(){document.getElementById('pCard').innerHTML=`<div class=
 function accReq(id){db.ref('friends/'+Date.now()).set({a:u.id,b:id});DB.reqs.filter(r=>r.from===id&&r.to===u.id).forEach(r=>db.ref('reqs/'+r.id).remove())}
 function decReq(id){DB.reqs.filter(r=>r.from===id&&r.to===u.id).forEach(r=>db.ref('reqs/'+r.id).remove())}
 
-// Чаты
 function renderChats(){let ms=DB.msgs.filter(m=>m.from===u.id||m.to===u.id),chs={};ms.forEach(m=>{let o=m.from===u.id?m.to:m.from;if(!chs[o]||m.time>chs[o].time)chs[o]=m});let r=Object.values(chs).sort((a,b)=>b.time-a.time),l=document.getElementById('chatsList');if(!r.length)return l.innerHTML='<div class="empty">нет сообщений</div>';l.innerHTML=r.map(m=>{let o=gU(m.from===u.id?m.to:m.from);return `<div class="chat-item" onclick="openChat('${o.id}')"><div class="av">${ini(o.nick)}</div><div style="flex:1"><div>${esc(o.nick)}</div><div style="font-size:12px;color:var(--muted)">${m.from===u.id?'Ты: ':''}${esc(m.text)}</div></div></div>`}).join('')}
 function openChat(id){aChat=id;let o=gU(id);document.getElementById('cHeader').innerHTML=`<button class="btn ghost sm" onclick="show('chats')">←</button><div class="av sm">${ini(o.nick)}</div><div style="flex:1"><div>${esc(o.nick)}</div><div style="font-size:12px;color:var(--muted)">@${o.id}</div></div>`;renderMsgs(id);show('chat')}
 function renderMsgs(id){let ms=DB.msgs.filter(m=>(m.from===u.id&&m.to===id)||(m.from===id&&m.to===u.id)).sort((a,b)=>a.time-b.time);let h=document.getElementById('cMsgs');h.innerHTML=ms.map(m=>`<div class="msg-wrap ${m.from===u.id?'me':'them'}"><div class="msg">${esc(m.text)}</div><div style="font-size:10px;color:var(--muted);margin-top:4px">${gT(m.time)}</div></div>`).join('');h.scrollTop=h.scrollHeight}
@@ -261,3 +270,4 @@ function send(){let i=document.getElementById('cInput'),t=i.value.trim();if(!t)r
 if(u){document.getElementById('auth').style.display='none';document.getElementById('header').style.display='flex';document.getElementById('nav').style.display='flex';document.getElementById('myAv').textContent=ini(u.nick);}
 </script>
 </body>
+</html>
