@@ -27,7 +27,6 @@ db.ref('/').on('value', snap => {
   dbLoaded = true;
 
   if(document.getElementById('v-feed').classList.contains('active')) renderFeed();
-  if(document.getElementById('v-profile').classList.contains('active')) renderProfile();
   if(document.getElementById('v-chats').classList.contains('active')) renderChats();
   if(aChat) renderMsgs(aChat);
 });
@@ -79,77 +78,47 @@ function show(v){
   
   if(v==='chats') renderChats();
   if(v==='feed') renderFeed();
-  if(v==='profile') renderProfile();
 }
 
-function renderProfile(){
-  document.getElementById('pCard').innerHTML = `
-    <div class="av lg" style="width:120px;height:120px;font-size:48px;border-radius:8px;border:2px solid var(--acc)">${ini(u.nick)}</div>
-    <div class="steam-profile-info">
-      <h2>${u.nick}</h2>
-      <p>Уровень 42 • В сети</p>
-      <div style="font-size:12px;color:var(--muted);margin-top:10px">ID: @${u.id}</div>
-    </div>
-    <div style="flex:1"></div>
-    <div class="steam-stats">
-      <div class="steam-stat"><b>124</b><span>Игр</span></div>
-      <div class="steam-stat"><b>42</b><span>Друзей</span></div>
-      <div class="steam-stat"><b>15</b><span>Наград</span></div>
-    </div>
-  `;
-  renderSteamLibrary();
-}
-
-function renderSteamLibrary() {
-  let lib = document.getElementById('steamLibrary');
-  let games = [
-    {id: 1, title: 'Counter-Strike 2', status: 'В сети', icon: '🔫'},
-    {id: 2, title: 'Dota 2', status: 'В сети', icon: '⚔️'},
-    {id: 3, title: 'Cyberpunk 2077', status: 'Играл недавно', icon: '🤖'},
-    {id: 4, title: 'GTA V', status: '1 час назад', icon: '🚗'}
-  ];
-  lib.innerHTML = games.map(g => `
-    <div class="lib-card" onclick="launchGame('${g.title}')">
-      <div class="lib-icon">${g.icon}</div>
-      <div class="lib-info">
-        <div class="lib-title">${g.title}</div>
-        <div class="lib-status">${g.status}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function launchGame(title) {
-  document.getElementById('gameTitle').innerText = title;
-  document.getElementById('gameOverlay').classList.add('active');
-}
-
+// ЧАТЫ
 function renderChats(){
   let list = document.getElementById('chatList'); if(!list) return;
-  // Добавим тестового бота для голосовых
+  
+  // Тестовые чаты (Боты) для интерактива
   let html = `
-    <div class="chat-item" onclick="openChat('bot')">
-      <div class="av sm" style="background:#ff4757">🤖</div>
-      <div class="info"><div style="font-size:14px;font-weight:bold;color:#fff">Голосовой Бот</div><div style="font-size:12px;color:var(--muted)">Проверь голосовые!</div></div>
+    <div class="chat-item" onclick="openChat('bot1')">
+      <div class="av sm" style="background:#ff4757">😂</div>
+      <div class="chat-info"><div class="chat-name">Мемный Бот</div><div class="chat-last">Скинь мем!</div></div>
+    </div>
+    <div class="chat-item" onclick="openChat('bot2')">
+      <div class="av sm" style="background:#2ed573">👾</div>
+      <div class="chat-info"><div class="chat-name">Геймерский Бот</div><div class="chat-last">Го в доту?</div></div>
     </div>
   `;
   
+  // Реальные друзья
   let f = DB.friends.filter(x=>x.a===u.id||x.b===u.id);
   f.forEach(x => {
     let o = gU(x.a===u.id?x.b:x.a);
     html += `<div class="chat-item" onclick="openChat('${o.id}')">
       <div class="av sm">${ini(o.nick)}</div>
-      <div class="info"><div style="font-size:14px;font-weight:bold;color:#fff">${o.nick}</div></div>
+      <div class="chat-info"><div class="chat-name">${o.nick}</div><div class="chat-last">Нажми чтобы открыть</div></div>
     </div>`;
   });
+  
   list.innerHTML = html;
 }
 
 function openChat(id){
   aChat = id;
+  document.getElementById('chatArea').style.display = 'flex';
+  document.getElementById('emptyChat').style.display = 'none';
+  
   let h = document.getElementById('cHeader');
-  if(id === 'bot') h.innerText = 'Голосовой Бот';
-  else h.innerText = gU(id).nick;
+  if(id === 'bot1') h.innerHTML = `<div class="av sm" style="background:#ff4757">😂</div> Мемный Бот`;
+  else if(id === 'bot2') h.innerHTML = `<div class="av sm" style="background:#2ed573">👾</div> Геймерский Бот`;
+  else h.innerHTML = `<div class="av sm">${ini(gU(id).nick)}</div> ${gU(id).nick}`;
+  
   renderMsgs(id);
 }
 
@@ -157,66 +126,46 @@ function renderMsgs(id){
   let h = document.getElementById('cMsgs'); if(!h) return;
   let ms = DB.msgs.filter(m=>(m.from===u.id && m.to===id)||(m.from===id && m.to===u.id)).sort((a,b)=>a.time-b.time);
   
-  let html = ms.map(m => {
-    // Если сообщение голосовое (начинается с [VOICE])
-    if(m.text.startsWith('[VOICE]')) {
-      let voiceText = m.text.replace('[VOICE]', '');
-      return `<div class="msg-wrap ${m.from===u.id?'me':'them'}">
-                <div class="msg">
-                  <button class="voice-btn" onclick="speak('${voiceText.replace(/'/g, "\\'")}')">▶️</button>
-                  <span>Голосовое сообщение</span>
-                </div>
-              </div>`;
-    }
-    return `<div class="msg-wrap ${m.from===u.id?'me':'them'}"><div class="msg">${m.text}</div></div>`;
-  }).join('');
+  let html = ms.map(m=>`<div class="msg-wrap ${m.from===u.id?'me':'them'}"><div class="msg">${m.text}</div></div>`).join('');
   
-  if(ms.length === 0 && id === 'bot') {
-    html = `<div class="msg-wrap them"><div class="msg">Напиши текст и нажми 🎤, чтобы отправить голосовое!</div></div>`;
-  }
+  // Стартовые сообщения для ботов
+  if(ms.length === 0 && id === 'bot1') html = `<div class="msg-wrap them"><div class="msg">Привет! Я собираю мемы. Напиши что-нибудь смешное!</div></div>`;
+  if(ms.length === 0 && id === 'bot2') html = `<div class="msg-wrap them"><div class="msg">Йоу! Я геймерский бот. Обсудим игры?</div></div>`;
   
   h.innerHTML = html;
   h.scrollTop = h.scrollHeight;
 }
 
-// Отправка текста или голосового
-function send(isVoice = false){
+function send(){
   let i = document.getElementById('cInput'), t = i.value.trim();
   if(!t || !aChat) return;
   
-  if(aChat === 'bot' && isVoice) {
-    // Бот отвечает голосовым
-    let botText = "[VOICE]Привет! Я бот, я умею говорить!";
-    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:'bot', to:u.id, text:botText, time:Date.now()});
-    i.value = '';
-    return;
+  if(aChat === 'bot1') {
+    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:'bot1', text:censor(t), time:Date.now()});
+    setTimeout(()=>db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:'bot1', to:u.id, text:'Ахаха, смешно! 😂', time:Date.now()}), 1000);
+  } else if(aChat === 'bot2') {
+    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:'bot2', text:censor(t), time:Date.now()});
+    setTimeout(()=>db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:'bot2', to:u.id, text:'Согласен, го в катку! 🎮', time:Date.now()}), 1000);
+  } else {
+    db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:aChat, text:censor(t), time:Date.now()});
   }
   
-  if(aChat === 'bot') { alert('Бот понимает только голосовые!'); i.value=''; return; }
-
-  let textToSend = isVoice ? '[VOICE]' + t : t;
-  db.ref('msgs/'+Date.now()).set({id:Date.now().toString(), from:u.id, to:aChat, text:textToSend, time:Date.now()});
   i.value = '';
 }
 
-// Озвучка голосового сообщения
-function speak(text) {
-  let msg = new SpeechSynthesisUtterance(text);
-  msg.lang = 'ru-RU';
-  window.speechSynthesis.speak(msg);
-}
-
+// ЛЕНТА
 function publish(){
   let ta=document.getElementById('pText'), t=ta.value.trim();
   if(!t) return;
   db.ref('posts/'+Date.now()).set({id:Date.now().toString(),aId:u.id,aNick:u.nick,text:censor(t),time:Date.now()});
   ta.value='';
 }
+
 function renderFeed(){
   let f=document.getElementById('feed'); if(!f) return;
   let ps=DB.posts.sort((a,b)=>b.time-a.time);
   if(!ps.length) return f.innerHTML='<div style="text-align:center;color:var(--muted);padding:50px">Тут пусто...</div>';
-  f.innerHTML=ps.map(p=>`<div class="post"><div style="font-weight:bold;color:var(--muted);margin-bottom:10px">${p.aNick}</div><div style="color:#fff">${p.text}</div></div>`).join('');
+  f.innerHTML=ps.map(p=>`<div class="post"><div style="font-weight:bold;color:var(--acc);margin-bottom:10px">${p.aNick}</div><div style="color:#fff;font-size:15px;line-height:1.5">${p.text}</div></div>`).join('');
 }
 
-if(u){ document.getElementById('auth').style.display='none'; show('profile'); }
+if(u){ document.getElementById('auth').style.display='none'; show('chats'); }
