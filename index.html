@@ -10,82 +10,116 @@
 <body>
 <div class="app">
   
-  <div class="sidebar-left">
-    <div class="logo">🚀 Скролл!</div>
-    <button class="nav-btn active" id="n-feed" onclick="show('feed')">📰 Лента</button>
-    <button class="nav-btn" id="n-chats" onclick="show('chats')">💬 Чаты</button>
-    <button class="nav-btn" id="n-profile" onclick="show('profile')">👤 Профиль</button>
-  </div>
-
-  <div class="main-content">
-    <header>
-      <div id="hTitle" style="font-size:18px;font-weight:bold;color:var(--text)">Лента</div>
-      <button class="btn btn-ghost" onclick="logout()">Выйти</button>
-    </header>
+  <!-- НОВАЯ ШАПКА КАК ВК -->
+  <header>
+    <div class="logo-area">
+      <div class="logo-icon">🚀</div>
+      <div class="logo-text">Скролл!</div>
+    </div>
     
-    <main style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-      
-      <section class="view active" id="v-feed" style="padding:10px">
-        <div style="max-width:550px;margin:0 auto;width:100%">
-          <div class="composer">
-            <textarea id="pText" placeholder="Что нового?" rows="2"></textarea>
-            <div id="imgPreview"></div>
-            <div class="composer-tools">
-              <label class="btn btn-ghost" style="cursor:pointer">📷 Фото<input type="file" accept="image/*" style="display:none" onchange="attachImg(event)"></label>
-              <button class="btn" onclick="publish()">Опубликовать</button>
-            </div>
-          </div>
-          <div id="feed"></div>
-        </div>
-      </section>
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" placeholder="Поиск">
+    </div>
+    
+    <div class="header-icons">
+      <div class="icon-btn" onclick="alert('Уведомления')">🔔<span class="badge">2</span></div>
+      <div class="icon-btn" onclick="alert('Музыка')">🎵</div>
+      <div class="avatar" onclick="show('profile')">U</div>
+    </div>
+  </header>
 
-      <section class="view" id="v-chats">
-        <div class="chat-layout">
-          <div class="chat-sidebar">
-            <div class="tabs">
-              <div class="tab active" id="tab-personal" onclick="switchChatTab('personal')">Личные</div>
-              <div class="tab" id="tab-channels" onclick="switchChatTab('channels')">Каналы</div>
-            </div>
-            <div id="chatList" style="flex:1;overflow-y:auto"></div>
-            <div id="channelCreator" style="display:none;padding:10px;border-top:1px solid var(--line)">
-              <input id="newChannelName" placeholder="Название канала" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);margin-bottom:8px;outline:none">
-              <button class="btn" style="width:100%" onclick="createChannel()">Создать канал</button>
-            </div>
-          </div>
-          
-          <div class="chat-area" id="chatArea" style="display:none">
-            <div style="padding:12px;border-bottom:1px solid var(--line);font-weight:bold;display:flex;align-items:center;gap:10px" id="cHeader"></div>
-            <div class="chat-messages" id="cMsgs"></div>
-            <div style="padding:10px;border-top:1px solid var(--line);display:flex;gap:10px">
-              <input id="cInput" placeholder="Сообщение..." onkeydown="if(event.key==='Enter')send()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--line);outline:none">
-              <button class="btn" onclick="send()">→</button>
-            </div>
-          </div>
-          
-          <div class="chat-area" id="emptyChat" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px">
-            Выбери чат или канал
-          </div>
-        </div>
-      </section>
+  <div class="main-layout">
+    <!-- ЛЕВОЕ МЕНЮ -->
+    <div class="sidebar-left">
+      <button class="nav-btn active" id="n-feed" onclick="show('feed')">📰 Лента</button>
+      <button class="nav-btn" id="n-chats" onclick="show('chats')">💬 Сообщения</button>
+      <button class="nav-btn" id="n-profile" onclick="show('profile')">👤 Мой профиль</button>
+      <button class="nav-btn" id="n-search" onclick="show('search')">🔍 Поиск</button>
+      <button class="nav-btn" id="n-settings" onclick="show('settings')">⚙️ Настройки</button>
+      <div style="flex:1"></div>
+      <button class="nav-btn" style="color:#ff4d4d" onclick="logout()">🚪 Выйти</button>
+    </div>
 
-      <section class="view" id="v-profile" style="padding:10px">
-        <div style="max-width:550px;margin:0 auto;width:100%">
-          <div class="post" id="pCard" style="text-align:center;padding:30px"></div>
-        </div>
-      </section>
+    <!-- КОНТЕНТ -->
+    <div class="main-content">
+      <main style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+        
+        <section class="view active" id="v-feed">
+          <div class="center-wrap">
+            <div class="composer">
+              <textarea id="pText" placeholder="Что у тебя нового?" rows="2"></textarea>
+              <div id="imgPreview"></div>
+              <div class="composer-tools">
+                <label class="btn btn-ghost" style="cursor:pointer">📷 Фото<input type="file" accept="image/*" style="display:none" onchange="attachImg(event)"></label>
+                <button class="btn" onclick="publish()">Опубликовать</button>
+              </div>
+            </div>
+            <div id="feed"></div>
+          </div>
+        </section>
 
-    </main>
+        <section class="view" id="v-chats">
+          <div class="chat-layout">
+            <div class="chat-sidebar">
+              <div class="tabs">
+                <div class="tab active" id="tab-personal" onclick="switchChatTab('personal')">Личные</div>
+                <div class="tab" id="tab-channels" onclick="switchChatTab('channels')">Каналы</div>
+              </div>
+              <div id="chatList" style="flex:1;overflow-y:auto"></div>
+              <div id="channelCreator" style="display:none;padding:10px;border-top:1px solid var(--line)">
+                <input id="newChannelName" placeholder="Название канала" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);margin-bottom:8px;outline:none;background:var(--bg);color:#fff">
+                <button class="btn" style="width:100%" onclick="createChannel()">Создать</button>
+              </div>
+            </div>
+            <div class="chat-area" id="chatArea" style="display:none">
+              <div style="padding:12px;border-bottom:1px solid var(--line);font-weight:bold;display:flex;align-items:center;gap:10px" id="cHeader"></div>
+              <div class="chat-messages" id="cMsgs"></div>
+              <div style="padding:10px;border-top:1px solid var(--line);display:flex;gap:10px">
+                <input id="cInput" placeholder="Написать сообщение..." onkeydown="if(event.key==='Enter')send()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--line);outline:none;background:var(--bg);color:#fff">
+                <button class="btn" onclick="send()">→</button>
+              </div>
+            </div>
+            <div class="chat-area" id="emptyChat" style="display:flex;align-items:center;justify-content:center;color:var(--muted)">
+              Выберите чат
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="v-profile">
+          <div class="center-wrap">
+            <div class="profile-card" id="pCard"></div>
+          </div>
+        </section>
+
+        <section class="view" id="v-search" style="padding:20px;align-items:center;justify-content:center">
+          <div style="text-align:center;color:var(--muted)">
+            <h2 style="color:#fff">Поиск друзей</h2>
+            <p>Введи ID пользователя, чтобы найти его</p>
+            <input id="searchId" placeholder="ID (@1234)" style="padding:12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:#fff;width:100%;max-width:300px;margin-bottom:10px;outline:none">
+            <button class="btn" onclick="findUser()">Найти</button>
+          </div>
+        </section>
+
+        <section class="view" id="v-settings" style="padding:20px;align-items:center;justify-content:center">
+          <div style="text-align:center;color:var(--muted)">
+            <h2 style="color:#fff">Настройки</h2>
+            <p>Скоро здесь появятся настройки профиля.</p>
+          </div>
+        </section>
+
+      </main>
+    </div>
   </div>
 </div>
 
 <div class="auth" id="auth">
   <div class="auth-box">
-    <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg, var(--acc), #00c6ff);margin:0 auto 15px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff">👤</div>
     <h1>Скролл!</h1>
-    <p style="color:var(--muted);margin-bottom:15px;font-size:13px">Твой личный мессенджер</p>
-    <input id="aNick" placeholder="Придумай ник">
+    <p style="color:var(--muted);margin-bottom:20px;font-size:14px">Твой личный мессенджер</p>
+    <input id="aNick" placeholder="Твой ник">
     <input id="aPass" type="password" placeholder="Пароль">
-    <button class="btn" style="width:100%;margin-top:5px" onclick="authSubmit()" id="aBtn">Войти</button>
+    <button class="btn" style="width:100%" onclick="authSubmit()" id="aBtn">Войти</button>
     <div style="color:#ff4d4d;font-size:13px;margin-top:10px;min-height:16px" id="aErr"></div>
     <div style="margin-top:15px;color:var(--muted);cursor:pointer;font-size:13px" onclick="authToggle()" id="aSwitch">Нет аккаунта? <span style="color:var(--acc)">Создать</span></div>
   </div>
