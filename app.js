@@ -30,7 +30,6 @@ function checkNick(nick) {
   return null;
 }
 
-// Трекинг онлайна
 function setOnline() {
   if(!u) return;
   db.ref('users/' + u.id + '/lastSeen').set(Date.now());
@@ -60,11 +59,22 @@ const gT = t => { let d=new Date(t); return d.getHours().toString().padStart(2,'
 const ini = n => n ? n[0].toUpperCase() : '?';
 const gU = id => DB.users.find(x => x.id === id) || {nick:'Удалён', id, cover:'', lastSeen:0};
 
-// Проверка онлайн (был в сети менее 2 минут назад)
 const isOnline = (id) => {
   let user = gU(id);
   return user.lastSeen && (Date.now() - user.lastSeen < 120000);
 };
+
+// Функция для получения ID видео из ссылки (YouTube, VK, RuTube)
+function getVideoHtml(url) {
+  if(!url) return '';
+  let ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+  if(ytMatch) return `<iframe class="p-video" src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen></iframe>`;
+  let vkMatch = url.match(/vk\.com\/video(-?\d+)_(\d+)/);
+  if(vkMatch) return `<iframe class="p-video" src="https://vk.com/video_ext.php?oid=${vkMatch[1]}&id=${vkMatch[2]}&hd=2" allowfullscreen></iframe>`;
+  let rtMatch = url.match(/rutube\.ru\/video\/([a-zA-Z0-9]+)/);
+  if(rtMatch) return `<iframe class="p-video" src="https://rutube.ru/play/embed/${rtMatch[1]}" allowfullscreen></iframe>`;
+  return ''; // Если ссылка не распознана
+}
 
 function appSet(){
   let s = JSON.parse(localStorage.getItem('setts')||'{"theme":"dark","bold":true,"fs":16,"radius":16,"anim":true}');
@@ -123,27 +133,26 @@ function authSubmit(){
 }
 function logout(){localStorage.removeItem('scroll_session');u=null;location.reload()}
 
-function changeId(){
-  let val=document.getElementById('newId').value.trim(),e=document.getElementById('idErr');e.textContent='';
-  if(!/^\d{4}$/.test(val))return e.textContent='ID из 4 цифр';
-  if(DB.users.some(x=>x.id===val))return e.textContent='ID занят';
-  db.ref('users/'+u.id).remove().then(()=>{
-    let nu = {id:val, nick:u.nick, pass:DB.users.find(x=>x.id===u.id).pass, cover:u.cover||''};
-    db.ref('users/'+val).set(nu).then(()=>{
-      u.id=val;localStorage.setItem('scroll_session',JSON.stringify(u));alert('ID изменен!');renderProfile();
-    });
-  });
+function show(v){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  let el=document.getElementById('v-'+v);if(el)el.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  let nb=document.getElementById('n-'+v);if(nb)nb.classList.add('active');
+  if(v==='profile')renderProfile();if(v==='chats')renderChats();if(v==='feed')renderFeed();
 }
 
-function setCover(e) {
+// Добавление фото
+function attachImg(e) {
   let file = e.target.files[0]; if(!file) return;
   let reader = new FileReader();
   reader.onload = function(evt) {
     let img = new Image();
     img.onload = function() {
       let canvas = document.createElement('canvas');
-      let MAX = 600; let width = img.width, height = img.height;
+      let MAX = 800; let width = img.width, height = img.height;
       if (width > height) { if (width > MAX) { height *= MAX / width; width = MAX; } } else { if (height > MAX) { width *= MAX / height; height = MAX; } }
       canvas.width = width; canvas.height = height;
       let ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-      let dataUrl = canvas.toDataURL('image/jpeg',
+      let dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      document.getElementById('pText').dataset.img = dataUrl;
+      document.getElementById('imgPreview').innerHTML = `<img src="${dataUrl}" style="width:100%;border-radius:
