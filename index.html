@@ -5,23 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Скролл!</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
-<link rel="stylesheet" href="style.css">
+<!-- ЗАЩИТА ОТ КЭША: ?v=3 -->
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <div class="app">
   
-  <!-- УНИКАЛЬНАЯ ШАПКА -->
   <header>
     <div class="logo-area">
       <div class="logo-icon">🚀</div>
       <div class="logo-text">Скролл!</div>
     </div>
-    
     <div class="search-bar">
       <span>🔍</span>
-      <input type="text" placeholder="Поиск по ID или нику...">
+      <input type="text" placeholder="Поиск">
     </div>
-    
     <div class="header-icons">
       <div class="icon-btn">🔔<span class="badge">2</span></div>
       <div class="icon-btn">🎵</div>
@@ -30,7 +28,6 @@
   </header>
 
   <div class="main-layout">
-    <!-- 7 ВКЛАДОК -->
     <div class="sidebar-left">
       <button class="nav-btn active" id="n-feed" onclick="show('feed')">📰 Лента</button>
       <button class="nav-btn" id="n-chats" onclick="show('chats')">💬 Сообщения</button>
@@ -43,10 +40,8 @@
       <button class="nav-btn" style="color:#fff;background:#222" onclick="logout()">🚪 Выйти</button>
     </div>
 
-    <!-- КОНТЕНТ -->
     <div class="main-content">
       <main>
-        <!-- ЛЕНТА -->
         <section class="view active" id="v-feed">
           <div class="center-wrap">
             <div class="composer">
@@ -61,7 +56,6 @@
           </div>
         </section>
 
-        <!-- СООБЩЕНИЯ -->
         <section class="view" id="v-chats">
           <div class="chat-layout">
             <div class="chat-sidebar">
@@ -81,7 +75,6 @@
           </div>
         </section>
 
-        <!-- КАНАЛЫ -->
         <section class="view" id="v-channels">
           <div class="center-wrap">
             <h2 style="color:#fff;margin-bottom:20px">Каналы</h2>
@@ -93,7 +86,6 @@
           </div>
         </section>
 
-        <!-- ПОИСК -->
         <section class="view" id="v-search">
           <div class="center-wrap" style="text-align:center;margin-top:50px">
             <h2 style="color:#fff">Поиск друзей</h2>
@@ -102,7 +94,6 @@
           </div>
         </section>
 
-        <!-- ОСТАЛЬНЫЕ ВКЛАДКИ -->
         <section class="view" id="v-friends"><div class="center-wrap" style="text-align:center;margin-top:50px"><h2 style="color:#fff">Друзья</h2></div></section>
         <section class="view" id="v-notifications"><div class="center-wrap" style="text-align:center;margin-top:50px"><h2 style="color:#fff">Уведомления</h2></div></section>
         <section class="view" id="v-settings"><div class="center-wrap" style="text-align:center;margin-top:50px"><h2 style="color:#fff">Настройки</h2></div></section>
